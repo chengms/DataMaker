@@ -1,6 +1,20 @@
-import type { AppSettings } from "@/types/settings";
+import type { AppSettings, LlmProviderSettings, PlatformPromptSettings } from "@/types/settings";
+import { getServerEnvValue } from "@/lib/server-env";
 
-export const DEFAULT_APP_SETTINGS: AppSettings = {
+function getDefaultProviderSettings(): LlmProviderSettings {
+  return {
+    provider: getServerEnvValue("LLM_PROVIDER") || "siliconflow",
+    apiKey: getServerEnvValue("LLM_API_KEY") || "",
+    baseUrl: getServerEnvValue("LLM_BASE_URL") || "https://api.siliconflow.cn/v1",
+    model: getServerEnvValue("LLM_MODEL") || "zai-org/GLM-5",
+    temperature: Number(getServerEnvValue("LLM_TEMPERATURE") || "0.7"),
+  };
+}
+
+const DEFAULT_PLATFORM_SETTINGS: Record<
+  "wechat" | "xiaohongshu" | "twitter" | "video_script",
+  PlatformPromptSettings
+> = {
   wechat: {
     enabled: true,
     systemPrompt:
@@ -34,3 +48,13 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
     extraRules: "前三秒抓人；转场明确；结尾 CTA 直接。",
   },
 };
+
+export function getDefaultAppSettings(): AppSettings {
+  return {
+    provider: getDefaultProviderSettings(),
+    wechat: DEFAULT_PLATFORM_SETTINGS.wechat,
+    xiaohongshu: DEFAULT_PLATFORM_SETTINGS.xiaohongshu,
+    twitter: DEFAULT_PLATFORM_SETTINGS.twitter,
+    video_script: DEFAULT_PLATFORM_SETTINGS.video_script,
+  };
+}

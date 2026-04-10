@@ -1,16 +1,18 @@
 import { PrismaClient } from "@prisma/client";
 
-import { DEFAULT_APP_SETTINGS } from "@/lib/default-settings";
+import { getDefaultAppSettings } from "@/lib/default-settings";
 
 const prisma = new PrismaClient();
 
 async function main() {
+  const settings = getDefaultAppSettings();
+
   await prisma.appSettings.upsert({
     where: { id: "default" },
-    update: { settings: DEFAULT_APP_SETTINGS },
+    update: { settings },
     create: {
       id: "default",
-      settings: DEFAULT_APP_SETTINGS,
+      settings,
     },
   });
 }

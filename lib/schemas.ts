@@ -45,7 +45,16 @@ export const platformPromptSettingsSchema = z.object({
   extraRules: z.string().optional(),
 });
 
+export const providerSettingsSchema = z.object({
+  provider: z.string().trim().min(1, "请输入 provider 名称"),
+  apiKey: z.string().trim().optional(),
+  baseUrl: z.string().trim().url("请输入合法的 Base URL"),
+  model: z.string().trim().min(1, "请输入模型名称"),
+  temperature: z.coerce.number().min(0).max(2).optional(),
+});
+
 export const appSettingsSchema = z.object({
+  provider: providerSettingsSchema,
   wechat: platformPromptSettingsSchema,
   xiaohongshu: platformPromptSettingsSchema,
   twitter: platformPromptSettingsSchema,

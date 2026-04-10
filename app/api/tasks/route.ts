@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { buildTaskTitle, generateMockContents } from "@/lib/mockGenerators";
+import { generateTaskContents } from "@/lib/content-generation";
+import { buildTaskTitle } from "@/lib/mockGenerators";
 import { prisma } from "@/lib/prisma";
 import { taskInputSchema } from "@/lib/schemas";
 import { getOrCreateSettings } from "@/lib/settings-service";
@@ -51,15 +52,28 @@ export async function POST(request: Request) {
     },
   });
 
-  const generatedContents = generateMockContents(normalizedInput);
+  try {
+    const generatedContents = await generateTaskContents(normalizedInput, settings);
 
-  const task = await prisma.task.update({
-    where: { id: created.id },
-    data: {
-      contents: generatedContents,
-      status: "generated",
-    },
-  });
+    const task = await prisma.task.update({
+      where: { id: created.id },
+      data: {
+        contents: generatedContents,
+        status: "generated",
+      },
+    });
 
-  return NextResponse.json(serializeTask(task), { status: 201 });
+    return NextResponse.json(serializeTask(task), { status: 201 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "内容生成失败";
+
+    await prisma.task.update({
+      where: { id: created.id },
+      data: {
+        status: "draft",
+      },
+    });
+
+    return NextResponse.json({ message }, { status: 502 });
+  }
 }
