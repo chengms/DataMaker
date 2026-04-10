@@ -2,8 +2,17 @@ import Link from "next/link";
 
 import { CreateTaskForm } from "@/components/create-task/CreateTaskForm";
 import { Button } from "@/components/ui/button";
+import { PLATFORM_OPTIONS } from "@/lib/platforms";
+import { getOrCreateSettings } from "@/lib/settings-service";
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const settings = await getOrCreateSettings();
+  const enabledPlatforms = PLATFORM_OPTIONS.filter((platform) => settings[platform.value].enabled).map(
+    (platform) => platform.value,
+  );
+
   return (
     <main className="min-h-screen px-4 py-6 lg:px-6 lg:py-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
@@ -18,7 +27,7 @@ export default function HomePage() {
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <CreateTaskForm />
+          <CreateTaskForm enabledPlatforms={enabledPlatforms} />
 
           <div className="space-y-4 rounded-[28px] border bg-white/70 p-5 shadow-panel">
             <div>

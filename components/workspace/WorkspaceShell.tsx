@@ -20,7 +20,15 @@ import { useWorkspaceStore } from "@/stores/workspace-store";
 import type { PlatformType } from "@/types/content";
 import type { Task } from "@/types/task";
 
-export function WorkspaceShell({ taskId }: { taskId: string }) {
+export function WorkspaceShell({
+  taskId,
+  initialTask,
+  initialHistoryTasks,
+}: {
+  taskId: string;
+  initialTask: Task;
+  initialHistoryTasks: Task[];
+}) {
   const {
     currentTask,
     historyTasks,
@@ -37,7 +45,7 @@ export function WorkspaceShell({ taskId }: { taskId: string }) {
     updateHistoryTask,
   } = useWorkspaceStore();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading] = useState(false);
   const [hasLoadError, setHasLoadError] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const latestTaskRef = useRef<Task | null>(null);
@@ -45,12 +53,19 @@ export function WorkspaceShell({ taskId }: { taskId: string }) {
   const queuedSaveRef = useRef(false);
 
   useEffect(() => {
-    latestTaskRef.current = currentTask;
-  }, [currentTask]);
+    setCurrentTask(initialTask);
+    setHistoryTasks(initialHistoryTasks);
+  }, [initialHistoryTasks, initialTask, setCurrentTask, setHistoryTasks]);
+
+  const displayTask = currentTask?.id === taskId ? currentTask : initialTask;
+  const displayHistoryTasks = historyTasks.length > 0 ? historyTasks : initialHistoryTasks;
+
+  useEffect(() => {
+    latestTaskRef.current = displayTask;
+  }, [displayTask]);
 
   useEffect(() => {
     async function load() {
-      setIsLoading(true);
       try {
         setHasLoadError(false);
         const [taskResponse, tasksResponse] = await Promise.all([
@@ -70,8 +85,6 @@ export function WorkspaceShell({ taskId }: { taskId: string }) {
         console.error(error);
         setHasLoadError(true);
         toast.error("工作台加载失败");
-      } finally {
-        setIsLoading(false);
       }
     }
 
@@ -79,9 +92,8 @@ export function WorkspaceShell({ taskId }: { taskId: string }) {
   }, [taskId, setCurrentTask, setHistoryTasks]);
 
   const activePlatform = useMemo<PlatformType | null>(() => {
-    if (!currentTask) return null;
-    return currentPlatform ?? currentTask.selectedPlatforms[0] ?? null;
-  }, [currentPlatform, currentTask]);
+    return currentPlatform ?? displayTask.selectedPlatforms[0] ?? null;
+  }, [currentPlatform, displayTask.selectedPlatforms]);
 
   const saveTask = useCallback(
     async (showToast = false) => {
@@ -144,7 +156,7 @@ export function WorkspaceShell({ taskId }: { taskId: string }) {
   );
 
   useEffect(() => {
-    if (!currentTask || !isEditing) return;
+    if (!isEditing) return;
     const timer = window.setTimeout(() => {
       void saveTask(false);
     }, 1200);
@@ -152,7 +164,7 @@ export function WorkspaceShell({ taskId }: { taskId: string }) {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [currentTask, isEditing, saveTask]);
+  }, [displayTask, isEditing, saveTask]);
 
   useEffect(() => {
     if (!isEditing && saveState !== "saving") return;
@@ -173,8 +185,8 @@ export function WorkspaceShell({ taskId }: { taskId: string }) {
   }
 
   function handleCopy() {
-    if (!currentTask || !activePlatform) return;
-    const data = getPlatformExportData(activePlatform, currentTask.contents);
+    if (!activePlatform) return;
+    const data = getPlatformExportData(activePlatform, displayTask.contents);
     navigator.clipboard.writeText(data.txt).then(
       () => toast.success("已复制当前平台内容"),
       () => toast.error("复制失败"),
@@ -182,22 +194,21 @@ export function WorkspaceShell({ taskId }: { taskId: string }) {
   }
 
   function handleExportTxt() {
-    if (!currentTask || !activePlatform) return;
-    const data = getPlatformExportData(activePlatform, currentTask.contents);
-    downloadFile(`${currentTask.title}-${activePlatform}.txt`, data.txt, "text/plain;charset=utf-8");
+    if (!activePlatform) return;
+    const data = getPlatformExportData(activePlatform, displayTask.contents);
+    downloadFile(`${displayTask.title}-${activePlatform}.txt`, data.txt, "text/plain;charset=utf-8");
   }
 
   function handleExportJson() {
-    if (!currentTask || !activePlatform) return;
-    const data = getPlatformExportData(activePlatform, currentTask.contents);
-    downloadFile(`${currentTask.title}-${activePlatform}.json`, data.json, "application/json;charset=utf-8");
+    if (!activePlatform) return;
+    const data = getPlatformExportData(activePlatform, displayTask.contents);
+    downloadFile(`${displayTask.title}-${activePlatform}.json`, data.json, "application/json;charset=utf-8");
   }
 
   async function handleMockPublish() {
-    if (!currentTask) return;
     setIsPublishing(true);
     try {
-      const response = await fetch(`/api/tasks/${currentTask.id}/mock-publish`, {
+      const response = await fetch(`/api/tasks/${displayTask.id}/mock-publish`, {
         method: "POST",
       });
       if (!response.ok) {
@@ -215,7 +226,7 @@ export function WorkspaceShell({ taskId }: { taskId: string }) {
   }
 
   function handleSelectTask(nextTaskId: string) {
-    if (nextTaskId === currentTask?.id) return;
+    if (nextTaskId === displayTask.id) return;
 
     if (isEditing || saveState === "saving") {
       const confirmed = window.confirm("当前任务还有未保存修改，确认离开当前页面吗？");
@@ -238,26 +249,26 @@ export function WorkspaceShell({ taskId }: { taskId: string }) {
     );
   }
 
-  if (!currentTask || !activePlatform) {
+  if (!activePlatform) {
     return <EmptyState title="任务不存在" description="当前任务未找到，或者已经被移除。" />;
   }
 
   return (
     <div className="grid min-h-screen gap-6 p-4 lg:grid-cols-[320px_minmax(0,1fr)] lg:p-6">
       <TaskHistorySidebar
-        tasks={historyTasks}
-        activeTaskId={currentTask.id}
+        tasks={displayHistoryTasks}
+        activeTaskId={displayTask.id}
         onSelectTask={handleSelectTask}
       />
 
       <main className="space-y-6">
-        <WorkspaceHeader task={currentTask} />
+        <WorkspaceHeader task={displayTask} />
 
         <div className="rounded-[28px] border bg-white/80 p-5 shadow-panel">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <PlatformTabs
               value={activePlatform}
-              platforms={currentTask.selectedPlatforms}
+              platforms={displayTask.selectedPlatforms}
               onChange={setCurrentPlatform}
             />
             <WorkspaceActions
@@ -274,48 +285,48 @@ export function WorkspaceShell({ taskId }: { taskId: string }) {
           </div>
         </div>
 
-        {activePlatform === "wechat" && currentTask.contents.wechat ? (
+        {activePlatform === "wechat" && displayTask.contents.wechat ? (
           <WechatEditor
-            content={currentTask.contents.wechat}
+            content={displayTask.contents.wechat}
             onChange={(content) =>
               updateCurrentTaskContents({
-                ...currentTask.contents,
+                ...displayTask.contents,
                 wechat: content,
               })
             }
           />
         ) : null}
 
-        {activePlatform === "xiaohongshu" && currentTask.contents.xiaohongshu ? (
+        {activePlatform === "xiaohongshu" && displayTask.contents.xiaohongshu ? (
           <XiaohongshuEditor
-            content={currentTask.contents.xiaohongshu}
+            content={displayTask.contents.xiaohongshu}
             onChange={(content) =>
               updateCurrentTaskContents({
-                ...currentTask.contents,
+                ...displayTask.contents,
                 xiaohongshu: content,
               })
             }
           />
         ) : null}
 
-        {activePlatform === "twitter" && currentTask.contents.twitter ? (
+        {activePlatform === "twitter" && displayTask.contents.twitter ? (
           <TwitterEditor
-            content={currentTask.contents.twitter}
+            content={displayTask.contents.twitter}
             onChange={(content) =>
               updateCurrentTaskContents({
-                ...currentTask.contents,
+                ...displayTask.contents,
                 twitter: content,
               })
             }
           />
         ) : null}
 
-        {activePlatform === "video_script" && currentTask.contents.video_script ? (
+        {activePlatform === "video_script" && displayTask.contents.video_script ? (
           <VideoScriptEditor
-            content={currentTask.contents.video_script}
+            content={displayTask.contents.video_script}
             onChange={(content) =>
               updateCurrentTaskContents({
-                ...currentTask.contents,
+                ...displayTask.contents,
                 video_script: content,
               })
             }
