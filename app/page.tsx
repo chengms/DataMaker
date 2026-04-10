@@ -1,0 +1,39 @@
+import Link from "next/link";
+
+import { CreateTaskForm } from "@/components/create-task/CreateTaskForm";
+import { Button } from "@/components/ui/button";
+
+export default function HomePage() {
+  return (
+    <main className="min-h-screen px-4 py-6 lg:px-6 lg:py-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
+        <header className="flex items-center justify-between rounded-[28px] border bg-white/75 px-5 py-4 shadow-panel">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Multi-Platform Content Studio V1</p>
+            <h1 className="mt-1 text-xl font-semibold">Content Studio</h1>
+          </div>
+          <Button variant="outline" asChild>
+            <Link href="/settings">设置</Link>
+          </Button>
+        </header>
+
+        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <CreateTaskForm />
+
+          <div className="space-y-4 rounded-[28px] border bg-white/70 p-5 shadow-panel">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Workflow</p>
+              <h2 className="mt-2 text-lg font-semibold">V1 能力范围</h2>
+            </div>
+            <ul className="space-y-3 text-sm leading-6 text-muted-foreground">
+              <li>统一输入一次需求，批量生成多个平台内容版本。</li>
+              <li>历史记录按任务保存，一个任务聚合多个平台结果。</li>
+              <li>各平台使用独立 schema，避免混用单一 content 字段。</li>
+              <li>支持保存、复制、导出和模拟发布，不接真实平台 API。</li>
+            </ul>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
