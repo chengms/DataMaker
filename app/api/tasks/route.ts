@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 
+import { buildTaskTitle, generateMockContents } from "@/lib/mockGenerators";
 import { prisma } from "@/lib/prisma";
-import { generateMockContents, buildTaskTitle } from "@/lib/mockGenerators";
 import { taskInputSchema } from "@/lib/schemas";
+import { getOrCreateSettings } from "@/lib/settings-service";
 import { serializeTask } from "@/lib/task-serializers";
 
 export async function GET() {
@@ -18,18 +19,39 @@ export async function GET() {
 export async function POST(request: Request) {
   const payload = await request.json();
   const input = taskInputSchema.parse(payload);
+  const settings = await getOrCreateSettings();
+  const enabledPlatforms = input.selectedPlatforms.filter((platform) => settings[platform].enabled);
+
+  if (enabledPlatforms.length === 0) {
+    return NextResponse.json(
+      { message: "当前没有可用平台，请先到设置页启用至少一个平台" },
+      { status: 400 },
+    );
+  }
+
+  if (enabledPlatforms.length !== input.selectedPlatforms.length) {
+    return NextResponse.json(
+      { message: "提交中包含已禁用平台，请刷新首页后重试" },
+      { status: 400 },
+    );
+  }
+
+  const normalizedInput = {
+    ...input,
+    selectedPlatforms: enabledPlatforms,
+  };
 
   const created = await prisma.task.create({
     data: {
-      title: buildTaskTitle(input),
+      title: buildTaskTitle(normalizedInput),
       status: "generating",
-      selectedPlatforms: input.selectedPlatforms,
-      input,
+      selectedPlatforms: enabledPlatforms,
+      input: normalizedInput,
       contents: {},
     },
   });
 
-  const generatedContents = generateMockContents(input);
+  const generatedContents = generateMockContents(normalizedInput);
 
   const task = await prisma.task.update({
     where: { id: created.id },

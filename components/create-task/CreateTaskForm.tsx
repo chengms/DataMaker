@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useMemo, useState } from "react";
 import { LoaderCircle, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,7 +15,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { PLATFORM_OPTIONS } from "@/lib/platforms";
 import { taskInputSchema } from "@/lib/schemas";
+import type { PlatformType } from "@/types/content";
+import type { AppSettings } from "@/types/settings";
 import type { Task } from "@/types/task";
 import type { z } from "zod";
 
@@ -22,6 +26,8 @@ type CreateTaskValues = z.infer<typeof taskInputSchema>;
 
 export function CreateTaskForm() {
   const router = useRouter();
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const form = useForm<CreateTaskValues>({
     resolver: zodResolver(taskInputSchema),
     defaultValues: {
@@ -38,24 +44,73 @@ export function CreateTaskForm() {
 
   const selectedPlatforms = form.watch("selectedPlatforms");
   const isTwitterEnabled = selectedPlatforms.includes("twitter");
+  const enabledPlatforms = useMemo<PlatformType[]>(
+    () =>
+      settings
+        ? PLATFORM_OPTIONS.filter((platform) => settings[platform.value].enabled).map(
+            (platform) => platform.value,
+          )
+        : [],
+    [settings],
+  );
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const response = await fetch("/api/settings");
+        if (!response.ok) {
+          throw new Error("平台设置加载失败");
+        }
+        const nextSettings: AppSettings = await response.json();
+        setSettings(nextSettings);
+      } catch (error) {
+        console.error(error);
+        toast.error("平台设置加载失败，暂时无法创建任务");
+      } finally {
+        setIsLoadingSettings(false);
+      }
+    }
+
+    void loadSettings();
+  }, []);
+
+  useEffect(() => {
+    if (isLoadingSettings || !settings) return;
+    const filtered = selectedPlatforms.filter((platform) => enabledPlatforms.includes(platform));
+    if (filtered.length !== selectedPlatforms.length) {
+      form.setValue("selectedPlatforms", filtered, { shouldValidate: true });
+    }
+  }, [enabledPlatforms, form, isLoadingSettings, selectedPlatforms, settings]);
 
   async function onSubmit(values: CreateTaskValues) {
+    const filteredPlatforms = values.selectedPlatforms.filter((platform) => enabledPlatforms.includes(platform));
+    if (filteredPlatforms.length === 0) {
+      form.setError("selectedPlatforms", {
+        message: "当前没有可用平台，请先到设置页启用至少一个平台",
+      });
+      return;
+    }
+
     try {
       const response = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          ...values,
+          selectedPlatforms: filteredPlatforms,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error("任务创建失败");
+        const error = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(error?.message || "任务创建失败");
       }
 
       const task: Task = await response.json();
       router.push(`/workspace/${task.id}`);
     } catch (error) {
       console.error(error);
-      toast.error("任务创建失败，请稍后重试");
+      toast.error(error instanceof Error ? error.message : "任务创建失败，请稍后重试");
     }
   }
 
@@ -125,8 +180,12 @@ export function CreateTaskForm() {
             </div>
             <PlatformSelector
               value={selectedPlatforms}
+              enabledPlatforms={enabledPlatforms}
               onChange={(next) => form.setValue("selectedPlatforms", next, { shouldValidate: true })}
             />
+            {!isLoadingSettings && enabledPlatforms.length === 0 ? (
+              <p className="text-sm text-destructive">当前所有平台都被关闭了，请先去设置页启用平台。</p>
+            ) : null}
             {form.formState.errors.selectedPlatforms ? (
               <p className="text-sm text-destructive">{form.formState.errors.selectedPlatforms.message}</p>
             ) : null}
@@ -148,11 +207,17 @@ export function CreateTaskForm() {
           <Button
             type="submit"
             size="lg"
-            disabled={form.formState.isSubmitting || !form.watch("topic") || selectedPlatforms.length === 0}
+            disabled={
+              form.formState.isSubmitting ||
+              isLoadingSettings ||
+              !form.watch("topic") ||
+              selectedPlatforms.length === 0 ||
+              enabledPlatforms.length === 0
+            }
             className="min-w-36"
           >
             {form.formState.isSubmitting ? <LoaderCircle className="size-4 animate-spin" /> : null}
-            生成内容任务
+            {isLoadingSettings ? "读取平台配置..." : "生成内容任务"}
           </Button>
         </form>
       </CardContent>
