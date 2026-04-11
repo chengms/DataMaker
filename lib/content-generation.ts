@@ -1,18 +1,34 @@
-import { generateMockContents } from "@/lib/mockGenerators";
 import { generateWechatContent } from "@/lib/wechat-generator";
-import type { TaskContents } from "@/types/content";
+import { generateXiaohongshuContent } from "@/lib/xiaohongshu-generator";
+import { generateTwitterContent } from "@/lib/twitter-generator";
+import { generateVideoScriptContent } from "@/lib/video-script-generator";
+import type { PlatformType, TaskContents } from "@/types/content";
 import type { AppSettings } from "@/types/settings";
 import type { TaskInput } from "@/types/task";
+
+type PlatformGenerator = (
+  input: TaskInput,
+  settings: AppSettings,
+) => Promise<TaskContents[PlatformType]>;
+
+const GENERATORS: Record<PlatformType, PlatformGenerator> = {
+  wechat: generateWechatContent,
+  xiaohongshu: generateXiaohongshuContent,
+  twitter: generateTwitterContent,
+  video_script: generateVideoScriptContent,
+};
 
 export async function generateTaskContents(
   input: TaskInput,
   settings: AppSettings,
 ): Promise<TaskContents> {
-  const contents = generateMockContents(input);
+  const entries = await Promise.all(
+    input.selectedPlatforms.map(async (platform) => {
+      const generator = GENERATORS[platform];
+      const content = await generator(input, settings);
+      return [platform, content] as const;
+    }),
+  );
 
-  if (input.selectedPlatforms.includes("wechat")) {
-    contents.wechat = await generateWechatContent(input, settings);
-  }
-
-  return contents;
+  return Object.fromEntries(entries) as TaskContents;
 }

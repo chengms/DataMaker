@@ -45,6 +45,9 @@ export function PlatformPromptForm({
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Prompt Settings</p>
         <h2 className="mt-2 text-2xl font-semibold">{PLATFORM_LABELS[platform]}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          这里的 System Prompt、默认语气、默认长度和附加规则会参与当前平台的生成过程。
+        </p>
       </div>
 
       <div className="flex items-center justify-between rounded-2xl border bg-card/70 px-4 py-3">

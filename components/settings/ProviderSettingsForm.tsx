@@ -98,7 +98,7 @@ export function ProviderSettingsForm({
         <Label>说明</Label>
         <Textarea
           readOnly
-          value="当前任务创建时，如果选择了公众号，会优先使用这里配置的模型服务进行真实生成；其他平台暂时仍使用 mock 内容。"
+          value="当前任务创建时，已启用的平台都会优先使用这里配置的兼容 OpenAI 模型服务进行内容生成。各平台的 Prompt 和附加规则会共同影响生成结果。"
           className="min-h-24 bg-muted/40"
         />
       </div>

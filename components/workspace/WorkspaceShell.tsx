@@ -96,12 +96,12 @@ export function WorkspaceShell({
   }, [currentPlatform, displayTask.selectedPlatforms]);
 
   const saveTask = useCallback(
-    async (showToast = false) => {
+    async (showToast = false): Promise<boolean> => {
       const task = latestTaskRef.current;
-      if (!task) return;
+      if (!task) return true;
       if (saveInFlightRef.current) {
         queuedSaveRef.current = true;
-        return;
+        return false;
       }
 
       const snapshotTaskId = task.id;
@@ -140,10 +140,13 @@ export function WorkspaceShell({
           setSaveState("idle");
           queuedSaveRef.current = true;
         }
+
+        return true;
       } catch (error) {
         console.error(error);
         setSaveState("error");
         toast.error(showToast ? "保存失败" : "自动保存失败");
+        return false;
       } finally {
         saveInFlightRef.current = false;
         if (queuedSaveRef.current) {
@@ -184,6 +187,14 @@ export function WorkspaceShell({
     void saveTask(true);
   }
 
+  async function ensureTaskSaved() {
+    if (!isEditing && saveState !== "error") {
+      return true;
+    }
+
+    return saveTask(true);
+  }
+
   function handleCopy() {
     if (!activePlatform) return;
     const data = getPlatformExportData(activePlatform, displayTask.contents);
@@ -208,6 +219,12 @@ export function WorkspaceShell({
   async function handleMockPublish() {
     setIsPublishing(true);
     try {
+      const saved = await ensureTaskSaved();
+      if (!saved) {
+        toast.error("发布前保存失败，请先处理保存错误");
+        return;
+      }
+
       const response = await fetch(`/api/tasks/${displayTask.id}/mock-publish`, {
         method: "POST",
       });
