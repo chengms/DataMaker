@@ -6,6 +6,7 @@ node_modules
 dist
 coverage
 *.log
+*.tsbuildinfo
 dev.db
 dev.db-journal
 prisma/dev.db

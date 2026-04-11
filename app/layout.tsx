@@ -1,14 +1,8 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
 
 import "@/app/globals.css";
 
 import { Toaster } from "@/components/ui/sonner";
-
-const manrope = Manrope({
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Multi-Platform Content Studio",
@@ -22,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className={manrope.className}>
+      <body>
         {children}
         <Toaster richColors position="top-right" />
       </body>

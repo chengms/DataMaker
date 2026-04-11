@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
@@ -46,7 +47,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     where: { id: taskId },
     data: {
       status: parsed.status ?? existing.status,
-      contents: nextContents,
+      contents: nextContents as Prisma.InputJsonValue,
     },
   });
 
