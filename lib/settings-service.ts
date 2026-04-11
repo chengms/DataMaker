@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getDefaultAppSettings } from "@/lib/default-settings";
+import { getProviderSettingsFromEnv } from "@/lib/provider-env";
 import { serializeSettings } from "@/lib/task-serializers";
 import type { AppSettings, LlmProviderSettings } from "@/types/settings";
 
@@ -7,14 +8,15 @@ export function normalizeSettings(input: unknown): AppSettings {
   const defaults = getDefaultAppSettings();
   const value = (input ?? {}) as Partial<AppSettings>;
   const provider: Partial<LlmProviderSettings> = value.provider ?? {};
+  const preset = getProviderSettingsFromEnv(provider.provider || defaults.provider.provider);
 
   return {
     provider: {
-      provider: provider.provider || defaults.provider.provider,
-      apiKey: provider.apiKey || defaults.provider.apiKey,
-      baseUrl: provider.baseUrl || defaults.provider.baseUrl,
-      model: provider.model || defaults.provider.model,
-      temperature: provider.temperature ?? defaults.provider.temperature,
+      provider: provider.provider || preset.provider,
+      apiKey: provider.apiKey || defaults.provider.apiKey || preset.apiKey,
+      baseUrl: provider.baseUrl || preset.baseUrl,
+      model: provider.model || preset.model,
+      temperature: provider.temperature ?? preset.temperature ?? defaults.provider.temperature,
     },
     wechat: {
       ...defaults.wechat,

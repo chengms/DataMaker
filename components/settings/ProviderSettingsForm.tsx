@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { getBuiltInProviders, getProviderPreset, PROVIDER_LABELS } from "@/lib/provider-presets";
 import { providerSettingsSchema } from "@/lib/schemas";
 import type { LlmProviderSettings } from "@/types/settings";
 
@@ -35,30 +36,51 @@ export function ProviderSettingsForm({
     form.reset(settings);
   }, [form, settings]);
 
+  function applyPreset(provider: string) {
+    const preset = getProviderPreset(provider);
+    form.reset(preset);
+  }
+
   return (
     <form className="space-y-5 rounded-[28px] border bg-white/80 p-6 shadow-panel" onSubmit={form.handleSubmit(onSave)}>
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Model Service</p>
         <h2 className="mt-2 text-2xl font-semibold">兼容 OpenAI 的模型服务配置</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          当前先接入 SiliconFlow。后续更换其他兼容 OpenAI 格式的服务时，只需要改 provider、Base URL、模型和密钥。
+          这里可以直接切换不同的兼容 OpenAI 的服务配置。现在内置了 SiliconFlow 和 MiniMax 两个预设，也支持你手动改成别的服务。
         </p>
+      </div>
+
+      <div className="space-y-3">
+        <Label>快速预设</Label>
+        <div className="flex flex-wrap gap-3">
+          {getBuiltInProviders().map((provider) => (
+            <Button
+              key={provider}
+              type="button"
+              variant={form.watch("provider") === provider ? "default" : "outline"}
+              onClick={() => applyPreset(provider)}
+            >
+              使用 {PROVIDER_LABELS[provider]}
+            </Button>
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label>Provider</Label>
-          <Input placeholder="例如：siliconflow" {...form.register("provider")} />
+          <Input placeholder="例如：siliconflow 或 minimax" {...form.register("provider")} />
         </div>
         <div className="space-y-2">
           <Label>Model</Label>
-          <Input placeholder="例如：zai-org/GLM-5" {...form.register("model")} />
+          <Input placeholder="例如：zai-org/GLM-5 或 MiniMax-M2.7" {...form.register("model")} />
         </div>
       </div>
 
       <div className="space-y-2">
         <Label>Base URL</Label>
-        <Input placeholder="https://api.siliconflow.cn/v1" {...form.register("baseUrl")} />
+        <Input placeholder="https://api.siliconflow.cn/v1 或 https://api.minimaxi.com/v1" {...form.register("baseUrl")} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_160px]">

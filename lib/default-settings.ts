@@ -1,13 +1,17 @@
 import type { AppSettings, LlmProviderSettings, PlatformPromptSettings } from "@/types/settings";
 import { getServerEnvValue } from "@/lib/server-env";
+import { getProviderSettingsFromEnv } from "@/lib/provider-env";
 
 function getDefaultProviderSettings(): LlmProviderSettings {
+  const defaultProvider = getServerEnvValue("LLM_PROVIDER") || "siliconflow";
+  const preset = getProviderSettingsFromEnv(defaultProvider);
+
   return {
-    provider: getServerEnvValue("LLM_PROVIDER") || "siliconflow",
-    apiKey: getServerEnvValue("LLM_API_KEY") || "",
-    baseUrl: getServerEnvValue("LLM_BASE_URL") || "https://api.siliconflow.cn/v1",
-    model: getServerEnvValue("LLM_MODEL") || "zai-org/GLM-5",
-    temperature: Number(getServerEnvValue("LLM_TEMPERATURE") || "0.7"),
+    ...preset,
+    apiKey: getServerEnvValue("LLM_API_KEY") || preset.apiKey || "",
+    baseUrl: getServerEnvValue("LLM_BASE_URL") || preset.baseUrl,
+    model: getServerEnvValue("LLM_MODEL") || preset.model,
+    temperature: Number(getServerEnvValue("LLM_TEMPERATURE") || String(preset.temperature || 0.7)),
   };
 }
 

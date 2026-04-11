@@ -1,4 +1,5 @@
 import { getServerEnvValue } from "@/lib/server-env";
+import { getProviderSettingsFromEnv } from "@/lib/provider-env";
 
 type ChatMessage = {
   role: "system" | "user" | "assistant";
@@ -6,6 +7,7 @@ type ChatMessage = {
 };
 
 type OpenAiCompatibleConfig = {
+  provider?: string;
   apiKey?: string;
   baseUrl: string;
   model: string;
@@ -63,7 +65,11 @@ export async function createOpenAiCompatibleCompletion(
   config: OpenAiCompatibleConfig,
   messages: ChatMessage[],
 ) {
-  const apiKey = config.apiKey || getServerEnvValue("LLM_API_KEY");
+  const preset = getProviderSettingsFromEnv(config.provider || "siliconflow");
+  const apiKey =
+    config.apiKey ||
+    getServerEnvValue("LLM_API_KEY") ||
+    preset.apiKey;
 
   if (!apiKey) {
     throw new Error("当前未配置 API Key，请先到设置页或环境变量中配置");
