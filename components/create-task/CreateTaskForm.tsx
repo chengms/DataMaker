@@ -24,8 +24,30 @@ import type { z } from "zod";
 
 type CreateTaskValues = z.infer<typeof taskInputSchema>;
 
+function CreateTaskFormSkeleton() {
+  return (
+    <div className="rounded-2xl border border-white/70 bg-white/80 p-6 shadow-panel">
+      <div className="space-y-3">
+        <div className="h-7 w-64 rounded-full bg-slate-200/80" />
+        <div className="h-4 w-full max-w-2xl rounded-full bg-slate-100" />
+        <div className="h-4 w-full max-w-xl rounded-full bg-slate-100" />
+      </div>
+      <div className="mt-8 space-y-4">
+        <div className="h-5 w-24 rounded-full bg-slate-200/80" />
+        <div className="h-36 rounded-2xl bg-slate-100" />
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="h-24 rounded-2xl bg-slate-100" />
+          <div className="h-24 rounded-2xl bg-slate-100" />
+        </div>
+        <div className="h-44 rounded-[24px] bg-[linear-gradient(135deg,rgba(240,249,255,0.95),rgba(255,255,255,0.92))]" />
+      </div>
+    </div>
+  );
+}
+
 export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: PlatformType[] }) {
   const router = useRouter();
+  const [isHydrated, setIsHydrated] = useState(false);
   const [autoAiReview, setAutoAiReview] = useState(true);
   const [isReviewing, setIsReviewing] = useState(false);
   const [reviewResult, setReviewResult] = useState<InputReviewResult | null>(null);
@@ -48,11 +70,19 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
   const showPlatformPrompt = enabledPlatforms.length > 0 && selectedPlatforms.length === 0;
 
   useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
     const filtered = selectedPlatforms.filter((platform) => enabledPlatforms.includes(platform));
     if (filtered.length !== selectedPlatforms.length) {
       form.setValue("selectedPlatforms", filtered, { shouldValidate: true });
     }
   }, [enabledPlatforms, form, selectedPlatforms]);
+
+  if (!isHydrated) {
+    return <CreateTaskFormSkeleton />;
+  }
 
   async function runAiReview(values: CreateTaskValues) {
     setIsReviewing(true);
