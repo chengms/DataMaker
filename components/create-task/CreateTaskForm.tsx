@@ -40,6 +40,7 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
 
   const selectedPlatforms = form.watch("selectedPlatforms");
   const isTwitterEnabled = selectedPlatforms.includes("twitter");
+  const showPlatformPrompt = enabledPlatforms.length > 0 && selectedPlatforms.length === 0;
 
   useEffect(() => {
     const filtered = selectedPlatforms.filter((platform) => enabledPlatforms.includes(platform));
@@ -149,6 +150,11 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
               enabledPlatforms={enabledPlatforms}
               onChange={(next) => form.setValue("selectedPlatforms", next, { shouldValidate: true })}
             />
+            {showPlatformPrompt ? (
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+                请选择至少一个平台后再生成内容任务。
+              </p>
+            ) : null}
             {enabledPlatforms.length === 0 ? (
               <p className="text-sm text-destructive">当前所有平台都被关闭了，请先去设置页启用平台。</p>
             ) : null}
@@ -176,7 +182,6 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
             disabled={
               form.formState.isSubmitting ||
               !form.watch("topic") ||
-              selectedPlatforms.length === 0 ||
               enabledPlatforms.length === 0
             }
             className="min-w-36"

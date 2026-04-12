@@ -24,10 +24,12 @@ export function PlatformSelector({
         const isEnabled = enabledPlatforms ? enabledPlatforms.includes(platform.value) : true;
 
         return (
-          <button
+          <div
             key={platform.value}
-            type="button"
-            disabled={!isEnabled}
+            role="checkbox"
+            aria-checked={checked}
+            aria-disabled={!isEnabled}
+            tabIndex={isEnabled ? 0 : -1}
             onClick={() => {
               if (!isEnabled) return;
               const next = checked
@@ -35,8 +37,17 @@ export function PlatformSelector({
                 : [...value, platform.value];
               onChange(next);
             }}
+            onKeyDown={(event) => {
+              if (!isEnabled) return;
+              if (event.key !== "Enter" && event.key !== " ") return;
+              event.preventDefault();
+              const next = checked
+                ? value.filter((item) => item !== platform.value)
+                : [...value, platform.value];
+              onChange(next);
+            }}
             className={cn(
-              "rounded-2xl border bg-card/80 p-4 text-left transition",
+              "rounded-2xl border bg-card/80 p-4 text-left transition outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               checked ? "border-primary bg-primary/5" : "border-border",
               isEnabled ? "hover:border-primary/40 hover:bg-white" : "cursor-not-allowed opacity-45",
             )}
@@ -51,7 +62,7 @@ export function PlatformSelector({
               </div>
               <Checkbox checked={checked} />
             </div>
-          </button>
+          </div>
         );
       })}
     </div>

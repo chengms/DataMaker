@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -13,6 +13,8 @@ import { XiaohongshuEditor } from "@/components/editors/XiaohongshuEditor";
 import { PlatformTabs } from "@/components/workspace/PlatformTabs";
 import { TaskHistorySidebar } from "@/components/workspace/TaskHistorySidebar";
 import { WorkspaceActions } from "@/components/workspace/WorkspaceActions";
+import { WorkspacePreviewDialog } from "@/components/workspace/WorkspacePreviewDialog";
+import { WorkspacePreviewPanel } from "@/components/workspace/WorkspacePreviewPanel";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { getPlatformExportData } from "@/lib/export";
 import { downloadFile } from "@/lib/utils";
@@ -48,6 +50,7 @@ export function WorkspaceShell({
   const [isLoading] = useState(false);
   const [hasLoadError, setHasLoadError] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const latestTaskRef = useRef<Task | null>(null);
   const saveInFlightRef = useRef(false);
   const queuedSaveRef = useRef(false);
@@ -94,6 +97,7 @@ export function WorkspaceShell({
   const activePlatform = useMemo<PlatformType | null>(() => {
     return currentPlatform ?? displayTask.selectedPlatforms[0] ?? null;
   }, [currentPlatform, displayTask.selectedPlatforms]);
+  const previewTask = useDeferredValue(displayTask);
 
   const saveTask = useCallback(
     async (showToast = false): Promise<boolean> => {
@@ -293,6 +297,7 @@ export function WorkspaceShell({
               onCopy={handleCopy}
               onExportTxt={handleExportTxt}
               onExportJson={handleExportJson}
+              onOpenPreview={() => setIsPreviewOpen(true)}
               onMockPublish={handleMockPublish}
               isSaving={saveState === "saving"}
               isPublishing={isPublishing}
@@ -302,53 +307,76 @@ export function WorkspaceShell({
           </div>
         </div>
 
-        {activePlatform === "wechat" && displayTask.contents.wechat ? (
-          <WechatEditor
-            content={displayTask.contents.wechat}
-            onChange={(content) =>
-              updateCurrentTaskContents({
-                ...displayTask.contents,
-                wechat: content,
-              })
-            }
-          />
-        ) : null}
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="space-y-6">
+            <div className="xl:hidden rounded-[28px] border border-dashed border-primary/20 bg-primary/5 px-5 py-4 text-sm leading-6 text-slate-600">
+              当前为紧凑编辑视图。点击上方“预览”可打开沉浸式平台预览。
+            </div>
 
-        {activePlatform === "xiaohongshu" && displayTask.contents.xiaohongshu ? (
-          <XiaohongshuEditor
-            content={displayTask.contents.xiaohongshu}
-            onChange={(content) =>
-              updateCurrentTaskContents({
-                ...displayTask.contents,
-                xiaohongshu: content,
-              })
-            }
-          />
-        ) : null}
+            {activePlatform === "wechat" && displayTask.contents.wechat ? (
+              <WechatEditor
+                content={displayTask.contents.wechat}
+                onChange={(content) =>
+                  updateCurrentTaskContents({
+                    ...displayTask.contents,
+                    wechat: content,
+                  })
+                }
+              />
+            ) : null}
 
-        {activePlatform === "twitter" && displayTask.contents.twitter ? (
-          <TwitterEditor
-            content={displayTask.contents.twitter}
-            onChange={(content) =>
-              updateCurrentTaskContents({
-                ...displayTask.contents,
-                twitter: content,
-              })
-            }
-          />
-        ) : null}
+            {activePlatform === "xiaohongshu" && displayTask.contents.xiaohongshu ? (
+              <XiaohongshuEditor
+                content={displayTask.contents.xiaohongshu}
+                onChange={(content) =>
+                  updateCurrentTaskContents({
+                    ...displayTask.contents,
+                    xiaohongshu: content,
+                  })
+                }
+              />
+            ) : null}
 
-        {activePlatform === "video_script" && displayTask.contents.video_script ? (
-          <VideoScriptEditor
-            content={displayTask.contents.video_script}
-            onChange={(content) =>
-              updateCurrentTaskContents({
-                ...displayTask.contents,
-                video_script: content,
-              })
-            }
+            {activePlatform === "twitter" && displayTask.contents.twitter ? (
+              <TwitterEditor
+                content={displayTask.contents.twitter}
+                onChange={(content) =>
+                  updateCurrentTaskContents({
+                    ...displayTask.contents,
+                    twitter: content,
+                  })
+                }
+              />
+            ) : null}
+
+            {activePlatform === "video_script" && displayTask.contents.video_script ? (
+              <VideoScriptEditor
+                content={displayTask.contents.video_script}
+                onChange={(content) =>
+                  updateCurrentTaskContents({
+                    ...displayTask.contents,
+                    video_script: content,
+                  })
+                }
+              />
+            ) : null}
+          </div>
+
+          <WorkspacePreviewPanel
+            task={previewTask}
+            activePlatform={activePlatform}
+            onPlatformChange={setCurrentPlatform}
+            onExpand={() => setIsPreviewOpen(true)}
           />
-        ) : null}
+        </div>
+
+        <WorkspacePreviewDialog
+          open={isPreviewOpen}
+          onOpenChange={setIsPreviewOpen}
+          task={previewTask}
+          activePlatform={activePlatform}
+          onPlatformChange={setCurrentPlatform}
+        />
       </main>
     </div>
   );

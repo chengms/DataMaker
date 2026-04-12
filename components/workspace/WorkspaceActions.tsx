@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Download, Save } from "lucide-react";
+import { Copy, Download, Eye, Save } from "lucide-react";
 
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ type WorkspaceActionsProps = {
   onCopy: () => void;
   onExportTxt: () => void;
   onExportJson: () => void;
+  onOpenPreview: () => void;
   onMockPublish: () => void | Promise<void>;
   isSaving?: boolean;
   isPublishing?: boolean;
@@ -23,6 +24,7 @@ export function WorkspaceActions({
   onCopy,
   onExportTxt,
   onExportJson,
+  onOpenPreview,
   onMockPublish,
   isSaving,
   isPublishing,
@@ -42,6 +44,10 @@ export function WorkspaceActions({
     <div className="flex flex-col items-start gap-2 lg:items-end">
       <p className="text-sm text-muted-foreground">{saveHint}</p>
       <div className="flex flex-wrap gap-3">
+        <Button variant="outline" onClick={onOpenPreview}>
+          <Eye className="size-4" />
+          预览
+        </Button>
         <Button onClick={() => void onSave()} disabled={isSaving}>
           <Save className="size-4" />
           保存

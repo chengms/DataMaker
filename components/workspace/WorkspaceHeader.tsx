@@ -1,4 +1,8 @@
+import Link from "next/link";
+import { ArrowLeft, Plus } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { PLATFORM_LABELS, TASK_STATUS_LABELS } from "@/lib/platforms";
 import { formatDateTime } from "@/lib/utils";
@@ -9,6 +13,20 @@ export function WorkspaceHeader({ task }: { task: Task }) {
     <div className="rounded-[28px] border bg-white/80 p-6 shadow-panel">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="outline" asChild>
+              <Link href="/">
+                <ArrowLeft className="size-4" />
+                返回主界面
+              </Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href="/">
+                <Plus className="size-4" />
+                新建任务
+              </Link>
+            </Button>
+          </div>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold">{task.title}</h1>
             <Badge variant={task.status === "published_mock" ? "success" : "default"}>
