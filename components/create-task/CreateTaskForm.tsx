@@ -281,7 +281,7 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
 
           <div className="space-y-3">
             <div>
-              <Label>平台选择</Label>
+              <p className="text-sm font-medium text-foreground">平台选择</p>
               <p className="mt-1 text-sm text-muted-foreground">至少选择一个平台。历史记录以一次任务为单位保存。</p>
             </div>
             <PlatformSelector
@@ -305,7 +305,7 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
           {isTwitterEnabled ? (
             <div className="space-y-3">
               <div>
-                <Label>Twitter 模式</Label>
+                <p className="text-sm font-medium text-foreground">Twitter 模式</p>
                 <p className="mt-1 text-sm text-muted-foreground">Twitter 的 single 与 thread 是两套独立内容结构。</p>
               </div>
               <TwitterModeSelector
