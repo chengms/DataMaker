@@ -1,8 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
-import { LoaderCircle, Settings2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { LoaderCircle, ScanSearch, Settings2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -14,9 +14,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { taskInputSchema } from "@/lib/schemas";
 import type { PlatformType } from "@/types/content";
+import type { InputReviewResult } from "@/types/review";
 import type { Task } from "@/types/task";
 import type { z } from "zod";
 
@@ -24,6 +26,9 @@ type CreateTaskValues = z.infer<typeof taskInputSchema>;
 
 export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: PlatformType[] }) {
   const router = useRouter();
+  const [autoAiReview, setAutoAiReview] = useState(true);
+  const [isReviewing, setIsReviewing] = useState(false);
+  const [reviewResult, setReviewResult] = useState<InputReviewResult | null>(null);
   const form = useForm<CreateTaskValues>({
     resolver: zodResolver(taskInputSchema),
     defaultValues: {
@@ -49,6 +54,28 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
     }
   }, [enabledPlatforms, form, selectedPlatforms]);
 
+  async function runAiReview(values: CreateTaskValues) {
+    setIsReviewing(true);
+    try {
+      const response = await fetch("/api/input-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+
+      if (!response.ok) {
+        const error = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(error?.message || "AI 输入检查失败");
+      }
+
+      const result = (await response.json()) as InputReviewResult;
+      setReviewResult(result);
+      return result;
+    } finally {
+      setIsReviewing(false);
+    }
+  }
+
   async function onSubmit(values: CreateTaskValues) {
     const filteredPlatforms = values.selectedPlatforms.filter((platform) => enabledPlatforms.includes(platform));
     if (filteredPlatforms.length === 0) {
@@ -59,6 +86,18 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
     }
 
     try {
+      if (autoAiReview) {
+        const review = await runAiReview({
+          ...values,
+          selectedPlatforms: filteredPlatforms,
+        });
+
+        if (review.status === "needs_attention") {
+          toast.warning("AI 检查发现输入还有优化空间，请先根据建议调整");
+          return;
+        }
+      }
+
       const response = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -78,6 +117,30 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
     } catch (error) {
       console.error(error);
       toast.error(error instanceof Error ? error.message : "任务创建失败，请稍后重试");
+    }
+  }
+
+  async function handleManualReview() {
+    const values = form.getValues();
+    const filteredPlatforms = values.selectedPlatforms.filter((platform) => enabledPlatforms.includes(platform));
+
+    if (!values.topic.trim()) {
+      form.setError("topic", {
+        message: "请输入创作主题后再进行 AI 检查",
+      });
+      return;
+    }
+
+    try {
+      const result = await runAiReview({
+        ...values,
+        selectedPlatforms: filteredPlatforms,
+      });
+
+      toast.success(result.status === "pass" ? "AI 检查通过，可以继续生成" : "AI 已返回优化建议");
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "AI 输入检查失败");
     }
   }
 
@@ -140,6 +203,82 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
             />
           </div>
 
+          <div className="space-y-4 rounded-[24px] border border-sky-100 bg-[linear-gradient(135deg,rgba(240,249,255,0.95),rgba(255,255,255,0.92))] p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
+                  <Sparkles className="size-4" />
+                  AI检查优化
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-slate-900">生成前检查输入质量</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    让 AI 先检查选题是否过泛、信息是否缺失、平台约束是否不够清晰，再决定是否直接生成。
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-full border border-sky-100 bg-white/85 px-4 py-2">
+                <Switch checked={autoAiReview} onCheckedChange={setAutoAiReview} />
+                <div>
+                  <p className="text-sm font-medium text-slate-900">生成前自动检查</p>
+                  <p className="text-xs text-slate-500">发现问题时先提示，不直接生成</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Button type="button" variant="outline" onClick={() => void handleManualReview()} disabled={isReviewing}>
+                {isReviewing ? <LoaderCircle className="size-4 animate-spin" /> : <ScanSearch className="size-4" />}
+                AI检查输入
+              </Button>
+            </div>
+
+            {reviewResult ? (
+              <div className="rounded-[22px] border border-white/90 bg-white/90 p-4 shadow-sm">
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {reviewResult.status === "pass" ? "AI 检查通过" : "AI 建议先优化输入"}
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-slate-600">{reviewResult.summary}</p>
+                  </div>
+                  <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                    {reviewResult.issues.length} 条提示
+                  </div>
+                </div>
+
+                {reviewResult.issues.length > 0 ? (
+                  <div className="mt-4 space-y-3">
+                    {reviewResult.issues.map((issue, index) => (
+                      <div
+                        key={`${issue.field}-${index}`}
+                        className="rounded-2xl border px-4 py-3 text-sm leading-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={
+                              issue.severity === "error"
+                                ? "rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700"
+                                : issue.severity === "warning"
+                                  ? "rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700"
+                                  : "rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700"
+                            }
+                          >
+                            {issue.severity === "error" ? "严重" : issue.severity === "warning" ? "注意" : "建议"}
+                          </span>
+                          <span className="font-medium text-slate-900">{issue.title}</span>
+                        </div>
+                        <p className="mt-2 text-slate-700">{issue.message}</p>
+                        {issue.suggestion ? <p className="mt-1 text-slate-500">建议：{issue.suggestion}</p> : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+
           <div className="space-y-3">
             <div>
               <Label>平台选择</Label>
@@ -180,6 +319,7 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
             type="submit"
             size="lg"
             disabled={
+              isReviewing ||
               form.formState.isSubmitting ||
               !form.watch("topic") ||
               enabledPlatforms.length === 0

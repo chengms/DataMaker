@@ -50,6 +50,7 @@ export function WorkspaceShell({
   const [isLoading] = useState(false);
   const [hasLoadError, setHasLoadError] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isPolishing, setIsPolishing] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const latestTaskRef = useRef<Task | null>(null);
   const saveInFlightRef = useRef(false);
@@ -246,6 +247,49 @@ export function WorkspaceShell({
     }
   }
 
+  async function handleAiPolish() {
+    if (!activePlatform) return;
+    if (!displayTask.contents[activePlatform]) {
+      toast.error("当前平台还没有可优化的内容");
+      return;
+    }
+
+    setIsPolishing(true);
+
+    try {
+      const response = await fetch(`/api/tasks/${displayTask.id}/ai-polish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          platform: activePlatform,
+          input: displayTask.input,
+          contents: displayTask.contents,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(error?.message || "降 AI 风格优化失败");
+      }
+
+      const data = (await response.json()) as {
+        platform: PlatformType;
+        content: Task["contents"][PlatformType];
+      };
+
+      updateCurrentTaskContents({
+        ...displayTask.contents,
+        [data.platform]: data.content,
+      });
+      toast.success("已完成降 AI 风格优化");
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "降 AI 风格优化失败");
+    } finally {
+      setIsPolishing(false);
+    }
+  }
+
   function handleSelectTask(nextTaskId: string) {
     if (nextTaskId === displayTask.id) return;
 
@@ -298,8 +342,10 @@ export function WorkspaceShell({
               onExportTxt={handleExportTxt}
               onExportJson={handleExportJson}
               onOpenPreview={() => setIsPreviewOpen(true)}
+              onAiPolish={handleAiPolish}
               onMockPublish={handleMockPublish}
               isSaving={saveState === "saving"}
+              isPolishing={isPolishing}
               isPublishing={isPublishing}
               saveState={saveState}
               isEditing={isEditing}

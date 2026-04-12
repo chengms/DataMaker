@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Download, Eye, Save } from "lucide-react";
+import { Copy, Download, Eye, Save, Sparkles } from "lucide-react";
 
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,10 @@ type WorkspaceActionsProps = {
   onExportTxt: () => void;
   onExportJson: () => void;
   onOpenPreview: () => void;
+  onAiPolish: () => void | Promise<void>;
   onMockPublish: () => void | Promise<void>;
   isSaving?: boolean;
+  isPolishing?: boolean;
   isPublishing?: boolean;
   saveState?: SaveState;
   isEditing?: boolean;
@@ -25,8 +27,10 @@ export function WorkspaceActions({
   onExportTxt,
   onExportJson,
   onOpenPreview,
+  onAiPolish,
   onMockPublish,
   isSaving,
+  isPolishing,
   isPublishing,
   saveState,
   isEditing,
@@ -47,6 +51,10 @@ export function WorkspaceActions({
         <Button variant="outline" onClick={onOpenPreview}>
           <Eye className="size-4" />
           预览
+        </Button>
+        <Button variant="outline" onClick={() => void onAiPolish()} disabled={isPolishing}>
+          <Sparkles className="size-4" />
+          {isPolishing ? "优化中..." : "降AI风格"}
         </Button>
         <Button onClick={() => void onSave()} disabled={isSaving}>
           <Save className="size-4" />
