@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
+import { ImageGenerationSettingsForm } from "@/components/settings/ImageGenerationSettingsForm";
 import { PlatformPromptSettingsForm } from "@/components/settings/PlatformPromptSettingsForm";
 import { PlatformPromptForm } from "@/components/settings/PlatformPromptForm";
 import { ProviderSettingsForm } from "@/components/settings/ProviderSettingsForm";
@@ -54,6 +55,11 @@ export function SettingsPageShell({
             ...settings,
             provider: defaultSettings.provider,
           }
+        : section === "image_generation"
+          ? {
+              ...settings,
+              imageGeneration: defaultSettings.imageGeneration,
+            }
         : {
             ...settings,
             [section]: defaultSettings[section],
@@ -121,6 +127,18 @@ export function SettingsPageShell({
                 })
               }
               onReset={() => void resetSection("provider")}
+            />
+          ) : activeSection === "image_generation" ? (
+            <ImageGenerationSettingsForm
+              settings={settings.imageGeneration}
+              isSaving={isSaving}
+              onSave={(values) =>
+                saveAll({
+                  ...settings,
+                  imageGeneration: values,
+                })
+              }
+              onReset={() => void resetSection("image_generation")}
             />
           ) : (
             <div className="space-y-6">

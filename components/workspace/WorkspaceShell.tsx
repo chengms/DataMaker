@@ -713,7 +713,7 @@ export function WorkspaceShell({
                 </div>
 
                 <div className="mt-5">
-                  {isGenerating ? (
+                  {isGenerating && !displayTask.contents[activePlatform] ? (
                     <div className="rounded-[28px] border border-dashed border-sky-200 bg-sky-50/70 px-5 py-8 text-sky-900">
                       <div className="flex items-center gap-3 text-base font-semibold">
                         <LoaderCircle className="size-5 animate-spin" />

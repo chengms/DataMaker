@@ -28,7 +28,7 @@ export async function POST(_: Request, context: RouteContext) {
   try {
     const settings = await getOrCreateSettings();
     const input = existing.input as TaskInput;
-    const generatedContents = await generateTaskContents(input, settings, async (execution, contents) => {
+    const generatedContents = await generateTaskContents(input, settings, taskId, async (execution, contents) => {
       await prisma.task.update({
         where: { id: taskId },
         data: {

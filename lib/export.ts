@@ -5,6 +5,23 @@ function toText(platform: PlatformType, contents: TaskContents) {
     case "wechat": {
       const content = contents.wechat;
       if (!content) return "";
+      if (content.blocks?.length) {
+        return content.blocks
+          .map((block) => {
+            if (block.type === "image") {
+              return `[图片:${block.purpose}] ${block.alt || ""}\n${block.prompt}`;
+            }
+            if (block.type === "list") {
+              return block.items.join("\n");
+            }
+            if (block.type === "heading") {
+              return block.text;
+            }
+            return "text" in block ? block.text : "";
+          })
+          .filter(Boolean)
+          .join("\n\n");
+      }
       return [
         content.title,
         content.summary,
@@ -19,6 +36,23 @@ function toText(platform: PlatformType, contents: TaskContents) {
     case "xiaohongshu": {
       const content = contents.xiaohongshu;
       if (!content) return "";
+      if (content.blocks?.length) {
+        return content.blocks
+          .map((block) => {
+            if (block.type === "image") {
+              return `[图片:${block.purpose}] ${block.alt || ""}\n${block.prompt}`;
+            }
+            if (block.type === "list") {
+              return block.items.join(" ");
+            }
+            if (block.type === "heading") {
+              return block.text;
+            }
+            return "text" in block ? block.text : "";
+          })
+          .filter(Boolean)
+          .join("\n\n");
+      }
       return [
         content.title,
         content.body,

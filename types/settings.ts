@@ -23,13 +23,30 @@ export type LlmProviderSettings = {
   temperature?: number;
 };
 
+export type ImageStylePreset =
+  | "realistic"
+  | "tech_illustration"
+  | "minimal_flat"
+  | "editorial"
+  | "xiaohongshu_lifestyle"
+  | "business_poster"
+  | "modern_3d";
+
+export type ImageGenerationSettings = {
+  enabled: boolean;
+  provider: "minimax";
+  stylePreset: ImageStylePreset;
+  customStylePrompt?: string;
+};
+
 export type AppSettings = {
   provider: LlmProviderSettings;
   platformPrompts: PlatformPromptConfig;
+  imageGeneration: ImageGenerationSettings;
   wechat: PlatformPromptSettings;
   xiaohongshu: PlatformPromptSettings;
   twitter: PlatformPromptSettings;
   video_script: PlatformPromptSettings;
 };
 
-export type SettingsSection = "provider" | PlatformType;
+export type SettingsSection = "provider" | "image_generation" | PlatformType;

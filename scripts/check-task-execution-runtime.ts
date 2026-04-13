@@ -1,5 +1,6 @@
 import { strict as assert } from "node:assert";
 
+import { getDefaultSettings } from "@/lib/settings-service";
 import { executeTaskGenerationPlan } from "@/lib/task-execution";
 import type { TaskContents } from "@/types/content";
 import type { TaskInput } from "@/types/task";
@@ -9,11 +10,19 @@ const sampleInput: TaskInput = {
   selectedPlatforms: ["wechat", "xiaohongshu", "twitter"],
   twitterMode: "single",
 };
+const settings = {
+  ...getDefaultSettings(),
+  imageGeneration: {
+    ...getDefaultSettings().imageGeneration,
+    enabled: false,
+  },
+};
 
 async function runSuccessCase() {
   const transitions: string[] = [];
   const result = await executeTaskGenerationPlan(
     sampleInput,
+    settings,
     async (subTask) => {
       if (!subTask.platform) {
         throw new Error("missing platform");
@@ -40,7 +49,7 @@ async function runSuccessCase() {
 }
 
 async function runFailureCase() {
-  const result = await executeTaskGenerationPlan(sampleInput, async (subTask) => {
+  const result = await executeTaskGenerationPlan(sampleInput, settings, async (subTask) => {
     if (subTask.platform === "xiaohongshu") {
       throw new Error("xiaohongshu failed");
     }

@@ -1,8 +1,17 @@
 import { prisma } from "@/lib/prisma";
-import { getDefaultAppSettings, getDefaultPlatformPromptConfig } from "@/lib/default-settings";
+import {
+  getDefaultAppSettings,
+  getDefaultImageGenerationSettings,
+  getDefaultPlatformPromptConfig,
+} from "@/lib/default-settings";
 import { getProviderSettingsFromEnv } from "@/lib/provider-env";
 import { serializeSettings } from "@/lib/task-serializers";
-import type { AppSettings, LlmProviderSettings, PlatformPromptConfig } from "@/types/settings";
+import type {
+  AppSettings,
+  ImageGenerationSettings,
+  LlmProviderSettings,
+  PlatformPromptConfig,
+} from "@/types/settings";
 
 function normalizePlatformPrompts(value: PlatformPromptConfig | undefined) {
   return {
@@ -10,6 +19,16 @@ function normalizePlatformPrompts(value: PlatformPromptConfig | undefined) {
     xiaohongshu: value?.xiaohongshu ?? "",
     twitter: value?.twitter ?? "",
     video_script: value?.video_script ?? "",
+  };
+}
+
+function normalizeImageGenerationSettings(value: ImageGenerationSettings | undefined): ImageGenerationSettings {
+  const defaults = getDefaultImageGenerationSettings();
+  return {
+    enabled: value?.enabled ?? defaults.enabled,
+    provider: "minimax",
+    stylePreset: value?.stylePreset ?? defaults.stylePreset,
+    customStylePrompt: value?.customStylePrompt ?? "",
   };
 }
 
@@ -28,6 +47,7 @@ export function normalizeSettings(input: unknown): AppSettings {
       temperature: provider.temperature ?? preset.temperature ?? defaults.provider.temperature,
     },
     platformPrompts: normalizePlatformPrompts(value.platformPrompts),
+    imageGeneration: normalizeImageGenerationSettings(value.imageGeneration),
     wechat: {
       ...defaults.wechat,
       ...(value.wechat ?? {}),
@@ -51,6 +71,7 @@ export function getDefaultSettings() {
   return {
     ...getDefaultAppSettings(),
     platformPrompts: getDefaultPlatformPromptConfig(),
+    imageGeneration: getDefaultImageGenerationSettings(),
   };
 }
 

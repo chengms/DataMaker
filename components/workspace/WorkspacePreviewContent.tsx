@@ -20,6 +20,7 @@ import { PLATFORM_LABELS } from "@/lib/platforms";
 import { cn } from "@/lib/utils";
 import { getPlatformSourceText } from "@/lib/workbench";
 import type {
+  ArticleBlock,
   PlatformType,
   TaskContents,
   TwitterThreadTweet,
@@ -146,7 +147,7 @@ function SourceTextView({
   text: string;
   task: Task;
 }) {
-  if (task.status === "generating") {
+  if (task.status === "generating" && !text) {
     return <PreviewEmptyState platform={platform} status={task.status} />;
   }
 
@@ -174,7 +175,8 @@ function PreviewStage({
   platform: PlatformType;
   contents: TaskContents;
 }) {
-  if (task.status === "generating") {
+  const hasContent = Boolean(contents[platform]);
+  if (task.status === "generating" && !hasContent) {
     return <PreviewEmptyState platform={platform} status={task.status} />;
   }
 
@@ -252,6 +254,7 @@ function DeviceFrame({ children, className }: { children: React.ReactNode; class
 
 function WechatPreview({ content }: { content: TaskContents["wechat"] }) {
   if (!content) return null;
+  const blocks = content.blocks;
 
   return (
     <DeviceFrame className="overflow-hidden">
@@ -263,17 +266,19 @@ function WechatPreview({ content }: { content: TaskContents["wechat"] }) {
         <h3 className="mt-4 text-[clamp(1.6rem,3vw,2.2rem)] font-semibold leading-tight text-slate-950">
           {content.title || "请输入标题"}
         </h3>
-        {content.summary ? (
+        {!blocks?.length && content.summary ? (
           <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">{content.summary}</p>
         ) : null}
       </div>
 
       <div className="space-y-10 px-8 py-8">
-        {content.sections.map((section, index) => (
-          <WechatSection key={`${section.heading}-${index}`} section={section} index={index} />
-        ))}
+        {blocks?.length
+          ? blocks.map((block, index) => <WechatBlockRenderer key={`${block.type}-${index}`} block={block} />)
+          : content.sections.map((section, index) => (
+              <WechatSection key={`${section.heading}-${index}`} section={section} index={index} />
+            ))}
 
-        {content.cta ? (
+        {!blocks?.length && content.cta ? (
           <div className="rounded-[28px] border border-emerald-100 bg-emerald-50/70 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">CTA</p>
             <p className="mt-3 text-base leading-7 text-slate-700">{content.cta}</p>
@@ -282,6 +287,46 @@ function WechatPreview({ content }: { content: TaskContents["wechat"] }) {
       </div>
     </DeviceFrame>
   );
+}
+
+function WechatBlockRenderer({ block }: { block: ArticleBlock }) {
+  if (block.type === "heading") {
+    if (block.level === 1) return null;
+    return <h4 className="text-2xl font-semibold leading-tight text-slate-900">{block.text}</h4>;
+  }
+
+  if (block.type === "paragraph") {
+    return <p className="text-[15px] leading-8 text-slate-700">{block.text}</p>;
+  }
+
+  if (block.type === "quote") {
+    return (
+      <blockquote className="rounded-[24px] border-l-4 border-emerald-500 bg-slate-50 px-5 py-4 text-[15px] leading-7 text-slate-700">
+        {block.text}
+      </blockquote>
+    );
+  }
+
+  if (block.type === "list") {
+    return (
+      <ul className="space-y-2 text-[15px] leading-7 text-slate-700">
+        {block.items.map((item) => (
+          <li key={item}>• {item}</li>
+        ))}
+      </ul>
+    );
+  }
+
+  if (block.type === "cta") {
+    return (
+      <div className="rounded-[28px] border border-emerald-100 bg-emerald-50/70 p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">CTA</p>
+        <p className="mt-3 text-base leading-7 text-slate-700">{block.text}</p>
+      </div>
+    );
+  }
+
+  return <ArticleImageCard block={block} tone="wechat" />;
 }
 
 function WechatSection({ section, index }: { section: WechatContentSection; index: number }) {
@@ -323,6 +368,7 @@ function XiaohongshuPreview({ content }: { content: TaskContents["xiaohongshu"] 
   if (!content) return null;
 
   const tags = normalizeHashtags(content.hashtags);
+  const blocks = content.blocks;
 
   return (
     <DeviceFrame className="max-w-[420px] overflow-hidden bg-[#fffaf6]">
@@ -338,35 +384,46 @@ function XiaohongshuPreview({ content }: { content: TaskContents["xiaohongshu"] 
       </div>
 
       <div className="space-y-4 px-5 py-5">
-        <div className="grid grid-cols-2 gap-3">
-          {content.images.length > 0 ? (
-            content.images.slice(0, 4).map((image, index) => (
-              <XiaohongshuImageCard key={image.id || index} image={image} index={index} />
-            ))
-          ) : (
-            <div className="col-span-2 flex aspect-[4/3] items-center justify-center rounded-[28px] border border-dashed border-rose-200 bg-white text-sm text-rose-400">
-              预留封面 / 图片区
-            </div>
-          )}
-        </div>
-
         <div className="rounded-[28px] bg-white p-5 shadow-[0_10px_30px_rgba(244,114,182,0.08)]">
           <p className="text-[13px] font-semibold uppercase tracking-[0.22em] text-rose-500">Note</p>
-          <div className="mt-4 space-y-4 text-[15px] leading-7 text-slate-700">
-            {splitParagraphs(content.body).map((paragraph, index) => (
-              <p key={index}>{paragraph}</p>
-            ))}
-          </div>
-
-          {tags.length ? (
-            <div className="mt-5 flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <span key={tag} className="rounded-full bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700">
-                  #{tag}
-                </span>
-              ))}
+          {blocks?.length ? (
+            <div className="mt-4 space-y-4">
+              {blocks
+                .filter((block) => !(block.type === "heading" && block.level === 1))
+                .map((block, index) => (
+                  <XiaohongshuBlockRenderer key={`${block.type}-${index}`} block={block} />
+                ))}
             </div>
-          ) : null}
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                {content.images.length > 0 ? (
+                  content.images.slice(0, 4).map((image, index) => (
+                    <XiaohongshuImageCard key={image.id || index} image={image} index={index} />
+                  ))
+                ) : (
+                  <div className="col-span-2 flex aspect-[4/3] items-center justify-center rounded-[28px] border border-dashed border-rose-200 bg-white text-sm text-rose-400">
+                    预留封面 / 图片区
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 space-y-4 text-[15px] leading-7 text-slate-700">
+                {splitParagraphs(content.body).map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                ))}
+              </div>
+
+              {tags.length ? (
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {tags.map((tag) => (
+                    <span key={tag} className="rounded-full bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </>
+          )}
 
           <div className="mt-6 rounded-[22px] bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-500">
             留言区引导：欢迎补充你的经验、案例或者踩坑感受。
@@ -377,15 +434,93 @@ function XiaohongshuPreview({ content }: { content: TaskContents["xiaohongshu"] 
   );
 }
 
+function XiaohongshuBlockRenderer({ block }: { block: ArticleBlock }) {
+  if (block.type === "paragraph") {
+    return <p className="text-[15px] leading-7 text-slate-700">{block.text}</p>;
+  }
+
+  if (block.type === "list") {
+    return (
+      <div className="flex flex-wrap gap-2">
+        {block.items.map((item) => (
+          <span key={item} className="rounded-full bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700">
+            {item}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  if (block.type === "image") {
+    return <ArticleImageCard block={block} tone="xiaohongshu" compact />;
+  }
+
+  if (block.type === "quote") {
+    return <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700">“{block.text}”</p>;
+  }
+
+  if (block.type === "heading") {
+    return <h4 className="text-xl font-semibold leading-snug text-slate-900">{block.text}</h4>;
+  }
+
+  return null;
+}
+
 function XiaohongshuImageCard({ image, index }: { image: XiaohongshuImage; index: number }) {
   return (
     <div className="overflow-hidden rounded-[24px] border border-rose-100 bg-white shadow-[0_12px_30px_rgba(244,114,182,0.06)]">
-      <div className="flex aspect-square items-center justify-center bg-[linear-gradient(135deg,#ffe9e0,#fff7f3)] px-4 text-center text-sm leading-6 text-slate-500">
-        {image.placeholder || image.url || `图片 ${index + 1}`}
-      </div>
+      {image.url ? (
+        <img src={image.url} alt={image.caption || `图片 ${index + 1}`} className="aspect-square w-full object-cover" />
+      ) : (
+        <div className="flex aspect-square items-center justify-center bg-[linear-gradient(135deg,#ffe9e0,#fff7f3)] px-4 text-center text-sm leading-6 text-slate-500">
+          {image.placeholder || `图片 ${index + 1}`}
+        </div>
+      )}
       {image.caption ? <div className="px-3 py-2 text-xs leading-5 text-slate-500">{image.caption}</div> : null}
     </div>
   );
+}
+
+function ArticleImageCard({
+  block,
+  tone,
+  compact = false,
+}: {
+  block: Extract<ArticleBlock, { type: "image" }>;
+  tone: "wechat" | "xiaohongshu";
+  compact?: boolean;
+}) {
+  const baseTone =
+    tone === "wechat"
+      ? "border-emerald-100 bg-[linear-gradient(135deg,#f8fffb,#f3fbf7)]"
+      : "border-rose-100 bg-[linear-gradient(135deg,#fff2ea,#fffaf6)]";
+
+  if (block.status === "ready" && block.url) {
+    return (
+      <figure className={cn("overflow-hidden rounded-[28px] border shadow-sm", baseTone)}>
+        <img src={block.url} alt={block.alt || block.purpose} className={cn("w-full object-cover", compact ? "aspect-[4/5]" : "aspect-[16/9]")} />
+        <figcaption className="px-4 py-3 text-sm leading-6 text-slate-600">{block.alt || block.purpose}</figcaption>
+      </figure>
+    );
+  }
+
+  return (
+    <div className={cn("rounded-[28px] border p-4", baseTone)}>
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="outline">{block.status === "generating" ? "图片生成中" : block.status === "failed" ? "图片生成失败" : "图片用途"}</Badge>
+        <Badge variant="outline">{block.stylePreset || "默认风格"}</Badge>
+      </div>
+      <p className="mt-3 text-sm font-medium text-slate-900">{block.purpose}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{summarizePrompt(block.prompt)}</p>
+      <p className="mt-2 text-xs text-slate-500">
+        {block.error ? `错误：${block.error}` : `位置：${block.placement} · 比例：${block.aspectRatio || "默认"}`}
+      </p>
+    </div>
+  );
+}
+
+function summarizePrompt(prompt: string) {
+  return prompt.length <= 120 ? prompt : `${prompt.slice(0, 120)}...`;
 }
 
 function TwitterPreview({ content }: { content: TaskContents["twitter"] }) {

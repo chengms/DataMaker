@@ -1,5 +1,6 @@
 import type {
   AppSettings,
+  ImageGenerationSettings,
   LlmProviderSettings,
   PlatformPromptConfig,
   PlatformPromptSettings,
@@ -73,6 +74,15 @@ export function getDefaultPlatformPromptConfig(): Required<PlatformPromptConfig>
   return { ...DEFAULT_PLATFORM_PROMPTS };
 }
 
+export function getDefaultImageGenerationSettings(): ImageGenerationSettings {
+  return {
+    enabled: true,
+    provider: "minimax",
+    stylePreset: "editorial",
+    customStylePrompt: "",
+  };
+}
+
 export function getDefaultAppSettings(): AppSettings {
   return {
     provider: getDefaultProviderSettings(),
@@ -82,6 +92,7 @@ export function getDefaultAppSettings(): AppSettings {
       twitter: "",
       video_script: "",
     },
+    imageGeneration: getDefaultImageGenerationSettings(),
     wechat: DEFAULT_PLATFORM_SETTINGS.wechat,
     xiaohongshu: DEFAULT_PLATFORM_SETTINGS.xiaohongshu,
     twitter: DEFAULT_PLATFORM_SETTINGS.twitter,

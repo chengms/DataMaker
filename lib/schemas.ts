@@ -64,9 +64,25 @@ export const providerSettingsSchema = z.object({
   temperature: z.coerce.number().min(0).max(2).optional(),
 });
 
+export const imageGenerationSettingsSchema = z.object({
+  enabled: z.boolean(),
+  provider: z.literal("minimax"),
+  stylePreset: z.enum([
+    "realistic",
+    "tech_illustration",
+    "minimal_flat",
+    "editorial",
+    "xiaohongshu_lifestyle",
+    "business_poster",
+    "modern_3d",
+  ]),
+  customStylePrompt: z.string().max(2000, "自定义图片风格描述不能超过 2000 个字符").optional(),
+});
+
 export const appSettingsSchema = z.object({
   provider: providerSettingsSchema,
   platformPrompts: platformPromptConfigSchema,
+  imageGeneration: imageGenerationSettingsSchema,
   wechat: platformPromptSettingsSchema,
   xiaohongshu: platformPromptSettingsSchema,
   twitter: platformPromptSettingsSchema,

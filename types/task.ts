@@ -7,6 +7,7 @@ export type SubTask = {
   title: string;
   goal: string;
   platform?: PlatformType;
+  kind?: "generate_text" | "plan_images" | "generate_images";
   status: SubTaskStatus;
   result?: string;
   error?: string;

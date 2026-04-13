@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       status: "generating",
       selectedPlatforms: enabledPlatforms,
       input: normalizedInput,
-      contents: attachExecutionMetadata({}, createTaskExecution(normalizedInput)),
+      contents: attachExecutionMetadata({}, createTaskExecution(normalizedInput, settings)),
     },
   });
 

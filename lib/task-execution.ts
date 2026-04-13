@@ -1,5 +1,7 @@
 import { PLATFORM_LABELS } from "@/lib/platforms";
+import { supportsAutoImages } from "@/lib/article-images";
 import type { PlatformType, TaskContents } from "@/types/content";
+import type { AppSettings } from "@/types/settings";
 import type { SubTask, TaskExecution, TaskInput } from "@/types/task";
 
 type PersistedTaskContents = TaskContents & {
@@ -8,7 +10,7 @@ type PersistedTaskContents = TaskContents & {
   };
 };
 
-type RunSubTask = (subTask: SubTask) => Promise<{
+type RunSubTask = (subTask: SubTask, context: { contents: TaskContents; execution: TaskExecution }) => Promise<{
   platform: PlatformType;
   content: TaskContents[PlatformType];
   result: string;
@@ -52,19 +54,48 @@ function updateSubTask(
   return nextExecution;
 }
 
-export function createTaskExecution(input: TaskInput): TaskExecution {
+export function createTaskExecution(input: TaskInput, settings?: AppSettings): TaskExecution {
   return {
     id: crypto.randomUUID(),
     originalGoal: input.topic,
     strategy: "abort_on_failure",
     status: "pending",
-    subTasks: input.selectedPlatforms.map((platform, index) => ({
-      id: `${platform}-${index + 1}`,
-      title: `生成${PLATFORM_LABELS[platform]}内容`,
-      goal: `完成 ${PLATFORM_LABELS[platform]} 平台版本生成`,
-      platform,
-      status: "pending",
-    })),
+    subTasks: input.selectedPlatforms.flatMap((platform, index) => {
+      const baseId = `${platform}-${index + 1}`;
+      const items: SubTask[] = [
+        {
+          id: `${baseId}-text`,
+          title: `生成${PLATFORM_LABELS[platform]}正文`,
+          goal: `完成 ${PLATFORM_LABELS[platform]} 平台正文结构生成`,
+          platform,
+          kind: "generate_text",
+          status: "pending",
+        },
+      ];
+
+      if (settings?.imageGeneration.enabled && supportsAutoImages(platform)) {
+        items.push(
+          {
+            id: `${baseId}-plan-images`,
+            title: `规划${PLATFORM_LABELS[platform]}配图`,
+            goal: `分析 ${PLATFORM_LABELS[platform]} 正文结构并插入图片块`,
+            platform,
+            kind: "plan_images",
+            status: "pending",
+          },
+          {
+            id: `${baseId}-render-images`,
+            title: `生成${PLATFORM_LABELS[platform]}图片`,
+            goal: `调用 MiniMax 完成 ${PLATFORM_LABELS[platform]} 图片生成并回填 URL`,
+            platform,
+            kind: "generate_images",
+            status: "pending",
+          },
+        );
+      }
+
+      return items;
+    }),
   };
 }
 
@@ -129,10 +160,11 @@ export function finalizeTaskStatus(execution: TaskExecution) {
 
 export async function executeTaskGenerationPlan(
   input: TaskInput,
+  settings: AppSettings,
   runSubTask: RunSubTask,
   onProgress?: ProgressCallback,
 ) {
-  let execution = createTaskExecution(input);
+  let execution = createTaskExecution(input, settings);
   let contents: TaskContents = {};
 
   execution = {
@@ -157,7 +189,7 @@ export async function executeTaskGenerationPlan(
     await onProgress?.(execution, contents);
 
     try {
-      const result = await runSubTask(next);
+      const result = await runSubTask(next, { contents, execution });
       contents = {
         ...contents,
         [result.platform]: result.content,

@@ -8,6 +8,7 @@ import type { PlatformType } from "@/types/content";
 
 const SETTINGS_SECTION_LABELS: Record<SettingsSection, string> = {
   provider: "模型服务",
+  image_generation: "图片生成",
   wechat: PLATFORM_LABELS.wechat,
   xiaohongshu: PLATFORM_LABELS.xiaohongshu,
   twitter: PLATFORM_LABELS.twitter,
@@ -23,6 +24,7 @@ export function SettingsSidebar({
 }) {
   const sections: SettingsSection[] = [
     "provider",
+    "image_generation",
     ...(Object.keys(PLATFORM_LABELS) as PlatformType[]),
   ];
 
