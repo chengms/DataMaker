@@ -14,8 +14,30 @@ export type TaskInput = {
   contentGoal?: string;
   lengthHint?: string;
   materialNotes?: string;
+  aiPrecheckEnabled?: boolean;
+  aiAutoFixEnabled?: boolean;
   selectedPlatforms: PlatformType[];
   twitterMode?: TwitterMode;
+};
+
+export type TaskContext = {
+  topic: string;
+  audience?: string;
+  tone?: string;
+  goal?: string;
+  lengthHint?: string;
+  extraMaterials?: string;
+  aiPrecheckEnabled?: boolean;
+  aiAutoFixEnabled?: boolean;
+  selectedPlatforms: Array<"wechat" | "xiaohongshu" | "twitter" | "video_script">;
+};
+
+export type TaskReferenceArticle = {
+  id: string;
+  title: string;
+  structure?: string[];
+  blocks?: string[];
+  source?: string;
 };
 
 export type Task = {

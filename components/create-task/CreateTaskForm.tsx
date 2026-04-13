@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { LoaderCircle, ScanSearch, Settings2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -49,6 +49,7 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
   const router = useRouter();
   const [isHydrated, setIsHydrated] = useState(false);
   const [autoAiReview, setAutoAiReview] = useState(true);
+  const [autoAiFix, setAutoAiFix] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
   const [reviewResult, setReviewResult] = useState<InputReviewResult | null>(null);
   const form = useForm<CreateTaskValues>({
@@ -60,6 +61,8 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
       contentGoal: "",
       lengthHint: "",
       materialNotes: "",
+      aiPrecheckEnabled: true,
+      aiAutoFixEnabled: false,
       selectedPlatforms: [],
       twitterMode: "single",
     },
@@ -119,6 +122,8 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
       if (autoAiReview) {
         const review = await runAiReview({
           ...values,
+          aiPrecheckEnabled: autoAiReview,
+          aiAutoFixEnabled: autoAiFix,
           selectedPlatforms: filteredPlatforms,
         });
 
@@ -133,6 +138,8 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...values,
+          aiPrecheckEnabled: autoAiReview,
+          aiAutoFixEnabled: autoAiFix,
           selectedPlatforms: filteredPlatforms,
         }),
       });
@@ -143,7 +150,9 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
       }
 
       const task: Task = await response.json();
-      router.push(`/workspace/${task.id}`);
+      startTransition(() => {
+        router.push(`/workspace/${task.id}`);
+      });
     } catch (error) {
       console.error(error);
       toast.error(error instanceof Error ? error.message : "任务创建失败，请稍后重试");
@@ -164,6 +173,8 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
     try {
       const result = await runAiReview({
         ...values,
+        aiPrecheckEnabled: autoAiReview,
+        aiAutoFixEnabled: autoAiFix,
         selectedPlatforms: filteredPlatforms,
       });
 
@@ -178,9 +189,10 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
     <Card className="border-white/70 bg-white/80">
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary/80">创作入口</p>
           <CardTitle className="text-2xl">单次输入，多平台并行产出</CardTitle>
           <CardDescription className="mt-2 max-w-2xl text-sm leading-6">
-            输入一次创作需求，直接生成公众号、小红书、Twitter 和视频脚本版本，然后继续进入工作台逐平台编辑。
+            输入一次创作需求，先创建内容任务，再进入内容创作工作台逐平台编辑、预览和发布前检查。
           </CardDescription>
         </div>
         <Button variant="outline" asChild>
@@ -248,11 +260,24 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 rounded-full border border-sky-100 bg-white/85 px-4 py-2">
+              <div className="rounded-full border border-sky-100 bg-white/85 px-4 py-2 text-sm text-slate-600">
+                创建任务后，当前 AI 设置会一并带入工作台上下文。
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="flex items-center gap-3 rounded-[20px] border border-sky-100 bg-white/80 px-4 py-3">
                 <Switch checked={autoAiReview} onCheckedChange={setAutoAiReview} />
                 <div>
-                  <p className="text-sm font-medium text-slate-900">生成前自动检查</p>
-                  <p className="text-xs text-slate-500">发现问题时先提示，不直接生成</p>
+                  <p className="text-sm font-medium text-slate-900">AI 预检查</p>
+                  <p className="text-xs text-slate-500">把检查状态写入任务上下文，便于工作台延续当前设置。</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-[20px] border border-sky-100 bg-white/80 px-4 py-3">
+                <Switch checked={autoAiFix} onCheckedChange={setAutoAiFix} />
+                <div>
+                  <p className="text-sm font-medium text-slate-900">自动修正策略</p>
+                  <p className="text-xs text-slate-500">先记录为任务偏好，后续可接入自动改写与批量修订。</p>
                 </div>
               </div>
             </div>
@@ -359,6 +384,9 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
             {form.formState.isSubmitting ? <LoaderCircle className="size-4 animate-spin" /> : null}
             生成内容任务
           </Button>
+          <p className="text-sm text-muted-foreground">
+            提交后会先创建任务并进入内容创作工作台，在那里继续生成、修改、预览和导出。
+          </p>
         </form>
       </CardContent>
     </Card>

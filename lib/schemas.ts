@@ -17,6 +17,8 @@ export const taskInputSchema = z
     contentGoal: z.string().trim().optional(),
     lengthHint: z.string().trim().optional(),
     materialNotes: z.string().trim().optional(),
+    aiPrecheckEnabled: z.boolean().optional(),
+    aiAutoFixEnabled: z.boolean().optional(),
     selectedPlatforms: z.array(platformTypeSchema).min(1, "至少选择一个平台"),
     twitterMode: twitterModeSchema.optional(),
   })

@@ -15,6 +15,7 @@ type RouteContext = {
 const aiPolishSchema = z.object({
   platform: platformTypeSchema,
   contents: z.record(z.string(), z.unknown()),
+  directive: z.string().trim().min(1).optional(),
   input: z.object({
     topic: z.string(),
     audience: z.string().optional(),
@@ -22,6 +23,8 @@ const aiPolishSchema = z.object({
     contentGoal: z.string().optional(),
     lengthHint: z.string().optional(),
     materialNotes: z.string().optional(),
+    aiPrecheckEnabled: z.boolean().optional(),
+    aiAutoFixEnabled: z.boolean().optional(),
     selectedPlatforms: z.array(platformTypeSchema),
     twitterMode: z.enum(["single", "thread"]).optional(),
   }),
@@ -47,6 +50,7 @@ export async function POST(request: Request, context: RouteContext) {
       parsed.input,
       parsed.contents as Task["contents"],
       settings,
+      parsed.directive,
     );
 
     return NextResponse.json({

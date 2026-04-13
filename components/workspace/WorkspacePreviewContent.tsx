@@ -1,12 +1,24 @@
 "use client";
 
-import { BookOpenText, Clapperboard, ExternalLink, MessageCircleMore, Sparkles, Timer } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  BookOpenText,
+  Clapperboard,
+  Copy,
+  ExternalLink,
+  FileText,
+  MessageCircleMore,
+  Sparkles,
+  Timer,
+} from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PLATFORM_LABELS } from "@/lib/platforms";
 import { cn } from "@/lib/utils";
+import { getPlatformSourceText } from "@/lib/workbench";
 import type {
   PlatformType,
   TaskContents,
@@ -33,6 +45,15 @@ export function WorkspacePreviewContent({
   mode = "panel",
 }: WorkspacePreviewContentProps) {
   const isDialog = mode === "dialog";
+  const [viewMode, setViewMode] = useState<"preview" | "source">("preview");
+  const sourceText = useMemo(() => getPlatformSourceText(task, activePlatform), [activePlatform, task]);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(sourceText).then(
+      () => toast.success("已复制当前平台原文"),
+      () => toast.error("复制失败"),
+    );
+  }
 
   return (
     <div
@@ -47,26 +68,36 @@ export function WorkspacePreviewContent({
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary/80">
                 <Sparkles className="size-3.5" />
-                Content Preview
+                Preview Workspace
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">内容预览</h2>
+                <h2 className="text-xl font-semibold text-slate-900">{PLATFORM_LABELS[activePlatform]} 预览区</h2>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  右侧面板用于实时检查当前平台的发布效果，弹窗可切换到更沉浸的阅读视图。
+                  右侧面板强调真实发布效果，同时支持在原文与结构化预览之间切换。
                 </p>
               </div>
             </div>
 
-            {isDialog ? (
-              <Badge variant="outline" className="self-start rounded-full px-3 py-1.5 text-xs uppercase tracking-[0.18em]">
-                全屏预览中
-              </Badge>
-            ) : (
-              <Button variant="outline" onClick={onExpand} className="self-start">
-                <ExternalLink className="size-4" />
-                展开预览
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" onClick={() => setViewMode(viewMode === "preview" ? "source" : "preview")}>
+                <FileText className="size-4" />
+                {viewMode === "preview" ? "原文" : "预览"}
               </Button>
-            )}
+              <Button variant="outline" onClick={handleCopy}>
+                <Copy className="size-4" />
+                复制
+              </Button>
+              {isDialog ? (
+                <Badge variant="outline" className="rounded-full px-3 py-1.5 text-xs uppercase tracking-[0.18em]">
+                  全屏预览中
+                </Badge>
+              ) : (
+                <Button variant="outline" onClick={onExpand}>
+                  <ExternalLink className="size-4" />
+                  展开预览
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -80,61 +111,118 @@ export function WorkspacePreviewContent({
               </TabsList>
             </Tabs>
 
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Badge variant="outline">{PLATFORM_LABELS[activePlatform]}</Badge>
-              <span>实时同步编辑内容</span>
-            </div>
+            <Tabs value={viewMode} onValueChange={(next) => setViewMode(next as "preview" | "source")}>
+              <TabsList className="bg-slate-100/90">
+                <TabsTrigger value="preview">预览</TabsTrigger>
+                <TabsTrigger value="source">原文</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         </div>
       </div>
 
-      <div className={cn("bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.08),transparent_28%),linear-gradient(to_bottom,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-4", isDialog ? "flex-1 overflow-auto p-6" : "")}>
-        <PreviewStage platform={activePlatform} contents={task.contents} />
+      <div
+        className={cn(
+          "bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.08),transparent_28%),linear-gradient(to_bottom,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-4",
+          isDialog ? "flex-1 overflow-auto p-6" : "",
+        )}
+      >
+        {viewMode === "source" ? (
+          <SourceTextView platform={activePlatform} text={sourceText} task={task} />
+        ) : (
+          <PreviewStage task={task} platform={activePlatform} contents={task.contents} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SourceTextView({
+  platform,
+  text,
+  task,
+}: {
+  platform: PlatformType;
+  text: string;
+  task: Task;
+}) {
+  if (task.status === "generating") {
+    return <PreviewEmptyState platform={platform} status={task.status} />;
+  }
+
+  return (
+    <div className="mx-auto max-w-[760px] overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+      <div className="border-b border-slate-100 px-6 py-5">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">原文</p>
+        <h3 className="mt-2 text-lg font-semibold text-slate-900">{PLATFORM_LABELS[platform]} 内容源文本</h3>
+      </div>
+      <div className="px-6 py-6">
+        <pre className="whitespace-pre-wrap text-sm leading-7 text-slate-700">
+          {text || "当前平台尚未生成原文内容。"}
+        </pre>
       </div>
     </div>
   );
 }
 
 function PreviewStage({
+  task,
   platform,
   contents,
 }: {
+  task: Task;
   platform: PlatformType;
   contents: TaskContents;
 }) {
+  if (task.status === "generating") {
+    return <PreviewEmptyState platform={platform} status={task.status} />;
+  }
+
   switch (platform) {
     case "wechat":
-      return contents.wechat ? <WechatPreview content={contents.wechat} /> : <PreviewEmptyState platform={platform} />;
+      return contents.wechat ? <WechatPreview content={contents.wechat} /> : <PreviewEmptyState platform={platform} status={task.status} />;
     case "xiaohongshu":
       return contents.xiaohongshu ? (
         <XiaohongshuPreview content={contents.xiaohongshu} />
       ) : (
-        <PreviewEmptyState platform={platform} />
+        <PreviewEmptyState platform={platform} status={task.status} />
       );
     case "twitter":
-      return contents.twitter ? <TwitterPreview content={contents.twitter} /> : <PreviewEmptyState platform={platform} />;
+      return contents.twitter ? <TwitterPreview content={contents.twitter} /> : <PreviewEmptyState platform={platform} status={task.status} />;
     case "video_script":
       return contents.video_script ? (
         <VideoScriptPreview content={contents.video_script} />
       ) : (
-        <PreviewEmptyState platform={platform} />
+        <PreviewEmptyState platform={platform} status={task.status} />
       );
     default:
-      return <PreviewEmptyState platform={platform} />;
+      return <PreviewEmptyState platform={platform} status={task.status} />;
   }
 }
 
-function PreviewEmptyState({ platform }: { platform: PlatformType }) {
+function PreviewEmptyState({
+  platform,
+  status,
+}: {
+  platform: PlatformType;
+  status: Task["status"];
+}) {
+  const isGenerating = status === "generating";
+
   return (
     <div className="flex min-h-[420px] items-center justify-center rounded-[28px] border border-dashed border-slate-200 bg-white/75 px-8 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
       <div className="max-w-sm space-y-4">
         <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg shadow-slate-900/15">
-          <Sparkles className="size-6" />
+          {isGenerating ? <Sparkles className="size-6 animate-pulse" /> : <Sparkles className="size-6" />}
         </div>
         <div>
-          <p className="text-lg font-semibold text-slate-900">{PLATFORM_LABELS[platform]} 预览暂未就绪</p>
+          <p className="text-lg font-semibold text-slate-900">
+            {isGenerating ? `${PLATFORM_LABELS[platform]} 正在生成中` : `${PLATFORM_LABELS[platform]} 预览暂未就绪`}
+          </p>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            该平台内容尚未生成，请先生成内容或在编辑区补充对应平台素材。
+            {isGenerating
+              ? "工作台已经收到任务上下文，AI 生成结果完成后会自动同步到这个预览区域。"
+              : "该平台内容尚未生成，请先生成内容或在编辑区补充对应平台素材。"}
           </p>
         </div>
       </div>
@@ -144,7 +232,12 @@ function PreviewEmptyState({ platform }: { platform: PlatformType }) {
 
 function DeviceFrame({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("mx-auto w-full max-w-[760px] rounded-[32px] border border-slate-200/90 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.08)]", className)}>
+    <div
+      className={cn(
+        "mx-auto w-full max-w-[760px] rounded-[32px] border border-slate-200/90 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.08)]",
+        className,
+      )}
+    >
       {children}
     </div>
   );
@@ -239,9 +332,11 @@ function XiaohongshuPreview({ content }: { content: TaskContents["xiaohongshu"] 
 
       <div className="space-y-4 px-5 py-5">
         <div className="grid grid-cols-2 gap-3">
-          {content.images.length > 0 ? content.images.slice(0, 4).map((image, index) => (
-            <XiaohongshuImageCard key={image.id || index} image={image} index={index} />
-          )) : (
+          {content.images.length > 0 ? (
+            content.images.slice(0, 4).map((image, index) => (
+              <XiaohongshuImageCard key={image.id || index} image={image} index={index} />
+            ))
+          ) : (
             <div className="col-span-2 flex aspect-[4/3] items-center justify-center rounded-[28px] border border-dashed border-rose-200 bg-white text-sm text-rose-400">
               预留封面 / 图片区
             </div>
@@ -259,10 +354,7 @@ function XiaohongshuPreview({ content }: { content: TaskContents["xiaohongshu"] 
           {tags.length ? (
             <div className="mt-5 flex flex-wrap gap-2">
               {tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700"
-                >
+                <span key={tag} className="rounded-full bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700">
                   #{tag}
                 </span>
               ))}
@@ -313,9 +405,7 @@ function TwitterPreview({ content }: { content: TaskContents["twitter"] }) {
         {content.mode === "single" ? (
           <TweetCard text={content.text} />
         ) : (
-          content.tweets.map((tweet, index) => (
-            <ThreadTweetCard key={tweet.id} tweet={tweet} index={index} />
-          ))
+          content.tweets.map((tweet, index) => <ThreadTweetCard key={tweet.id} tweet={tweet} index={index} />)
         )}
       </div>
     </DeviceFrame>
@@ -415,7 +505,7 @@ function VideoScriptPreview({ content }: { content: TaskContents["video_script"]
           </div>
         ))}
 
-        {(content.transition || content.endingCta || content.voiceoverNotes) ? (
+        {content.transition || content.endingCta || content.voiceoverNotes ? (
           <div className="grid gap-4 lg:grid-cols-3">
             <InfoTile title="Transition" value={content.transition} />
             <InfoTile title="Ending CTA" value={content.endingCta} />

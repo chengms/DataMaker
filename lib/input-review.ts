@@ -13,6 +13,8 @@ export const inputReviewRequestSchema = z.object({
   contentGoal: z.string().trim().optional(),
   lengthHint: z.string().trim().optional(),
   materialNotes: z.string().trim().optional(),
+  aiPrecheckEnabled: z.boolean().optional(),
+  aiAutoFixEnabled: z.boolean().optional(),
   selectedPlatforms: z.array(
     z.enum(["wechat", "xiaohongshu", "twitter", "video_script"]),
   ),

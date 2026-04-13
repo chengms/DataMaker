@@ -75,10 +75,12 @@ const videoScriptSchema = z.object({
   voiceoverNotes: z.string().min(1),
 });
 
-function buildPolishPrompt(platform: PlatformType, input: TaskInput, content: unknown) {
+function buildPolishPrompt(platform: PlatformType, input: TaskInput, content: unknown, directive?: string) {
   return [
-    "请对下面的内容做“降 AI 风格”优化。",
-    "目标不是改主题，而是把文风改得更自然、更像真实作者写出来的版本。",
+    directive ? "请根据补充修改要求，重写并优化下面的内容。" : "请对下面的内容做“降 AI 风格”优化。",
+    directive
+      ? "目标是在保留核心信息和平台结构的前提下，按修改要求完成新一轮创作。"
+      : "目标不是改主题，而是把文风改得更自然、更像真实作者写出来的版本。",
     "必须保留原有事实、平台结构、主要观点和 CTA。",
     "请减少以下问题：模板腔、空泛套话、机械并列、过度总结、过于均匀的句式、明显 AI 连接词。",
     "必须严格返回 JSON，不要返回 Markdown，不要解释，不要补充说明。",
@@ -88,8 +90,11 @@ function buildPolishPrompt(platform: PlatformType, input: TaskInput, content: un
     `- 受众：${input.audience || "未指定"}`,
     `- 语气：${input.tone || "未指定"}`,
     `- 内容目标：${input.contentGoal || "未指定"}`,
+    `- 长度提示：${input.lengthHint || "未指定"}`,
+    `- 补充素材：${input.materialNotes || "未指定"}`,
     "- 允许微调句子和段落，但不要改变结构字段名。",
     "- Twitter 每条仍必须控制在 280 字以内。",
+    directive ? `补充修改要求：${directive}` : "如果没有额外修改要求，请只做自然化优化。",
     "当前内容 JSON：",
     JSON.stringify(content, null, 2),
   ].join("\n");
@@ -100,6 +105,7 @@ export async function polishPlatformContent(
   input: TaskInput,
   contents: TaskContents,
   settings: AppSettings,
+  directive?: string,
 ) {
   const currentContent = contents[platform];
 
@@ -115,7 +121,7 @@ export async function polishPlatformContent(
     },
     {
       role: "user",
-      content: buildPolishPrompt(platform, input, currentContent),
+      content: buildPolishPrompt(platform, input, currentContent, directive),
     },
   ]);
 
