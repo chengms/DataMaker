@@ -1,10 +1,31 @@
 import type { PlatformType, TaskContents, TwitterMode } from "@/types/content";
 
+export type SubTaskStatus = "pending" | "running" | "completed" | "failed";
+
+export type SubTask = {
+  id: string;
+  title: string;
+  goal: string;
+  platform?: PlatformType;
+  status: SubTaskStatus;
+  result?: string;
+  error?: string;
+};
+
+export type TaskExecution = {
+  id: string;
+  originalGoal: string;
+  strategy: "abort_on_failure";
+  status: SubTaskStatus;
+  subTasks: SubTask[];
+};
+
 export type TaskStatus =
   | "draft"
   | "generating"
   | "generated"
   | "edited"
+  | "failed"
   | "published_mock";
 
 export type TaskInput = {
@@ -47,6 +68,7 @@ export type Task = {
   status: TaskStatus;
   selectedPlatforms: PlatformType[];
   contents: TaskContents;
+  execution?: TaskExecution;
   createdAt: string;
   updatedAt: string;
 };

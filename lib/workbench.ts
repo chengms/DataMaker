@@ -73,6 +73,14 @@ export function buildWorkbenchTimeline(task: Task) {
     });
   }
 
+  if (task.status === "failed") {
+    items.push({
+      id: "failed",
+      label: TASK_STATUS_LABELS.failed,
+      detail: task.execution?.subTasks.find((subTask) => subTask.status === "failed")?.error || "任务在子任务执行阶段失败。",
+    });
+  }
+
   if (task.status === "published_mock") {
     items.push({
       id: "published",

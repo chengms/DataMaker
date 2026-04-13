@@ -208,6 +208,7 @@ function PreviewEmptyState({
   status: Task["status"];
 }) {
   const isGenerating = status === "generating";
+  const isFailed = status === "failed";
 
   return (
     <div className="flex min-h-[420px] items-center justify-center rounded-[28px] border border-dashed border-slate-200 bg-white/75 px-8 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
@@ -217,12 +218,18 @@ function PreviewEmptyState({
         </div>
         <div>
           <p className="text-lg font-semibold text-slate-900">
-            {isGenerating ? `${PLATFORM_LABELS[platform]} 正在生成中` : `${PLATFORM_LABELS[platform]} 预览暂未就绪`}
+            {isGenerating
+              ? `${PLATFORM_LABELS[platform]} 正在生成中`
+              : isFailed
+                ? `${PLATFORM_LABELS[platform]} 生成失败`
+                : `${PLATFORM_LABELS[platform]} 预览暂未就绪`}
           </p>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             {isGenerating
               ? "工作台已经收到任务上下文，AI 生成结果完成后会自动同步到这个预览区域。"
-              : "该平台内容尚未生成，请先生成内容或在编辑区补充对应平台素材。"}
+              : isFailed
+                ? "这一轮执行在子任务阶段失败了。请检查左侧的子任务记录和错误信息，然后决定是否重试或手动编辑。"
+                : "该平台内容尚未生成，请先生成内容或在编辑区补充对应平台素材。"}
           </p>
         </div>
       </div>

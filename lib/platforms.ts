@@ -1,5 +1,5 @@
 import type { PlatformType, TwitterMode } from "@/types/content";
-import type { TaskStatus } from "@/types/task";
+import type { SubTaskStatus, TaskStatus } from "@/types/task";
 
 export const PLATFORM_OPTIONS: Array<{ value: PlatformType; label: string; description: string }> = [
   { value: "wechat", label: "公众号", description: "长文结构化内容" },
@@ -25,5 +25,13 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   generating: "生成中",
   generated: "已生成",
   edited: "已编辑",
+  failed: "执行失败",
   published_mock: "已模拟发布",
+};
+
+export const SUBTASK_STATUS_LABELS: Record<SubTaskStatus, string> = {
+  pending: "待执行",
+  running: "执行中",
+  completed: "已完成",
+  failed: "失败",
 };

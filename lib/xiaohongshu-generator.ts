@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { createOpenAiCompatibleCompletion } from "@/lib/openai-compatible";
+import { buildFinalSystemPrompt } from "@/lib/platform-prompt-settings";
 import type { XiaohongshuContent } from "@/types/content";
 import type { AppSettings } from "@/types/settings";
 import type { TaskInput } from "@/types/task";
@@ -66,10 +67,15 @@ export async function generateXiaohongshuContent(
   input: TaskInput,
   settings: AppSettings,
 ): Promise<XiaohongshuContent> {
+  const { finalSystemPrompt } = buildFinalSystemPrompt(
+    "xiaohongshu",
+    settings,
+    "运行时约束：必须输出小红书图文 JSON，包含图片建议、标题、正文和 hashtags。",
+  );
   const content = await createOpenAiCompatibleCompletion(settings.provider, [
     {
       role: "system",
-      content: settings.xiaohongshu.systemPrompt,
+      content: finalSystemPrompt,
     },
     {
       role: "user",

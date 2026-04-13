@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { createOpenAiCompatibleCompletion } from "@/lib/openai-compatible";
+import { buildFinalSystemPrompt } from "@/lib/platform-prompt-settings";
 import type { TwitterContent } from "@/types/content";
 import type { AppSettings } from "@/types/settings";
 import type { TaskInput } from "@/types/task";
@@ -66,10 +67,15 @@ export async function generateTwitterContent(
   input: TaskInput,
   settings: AppSettings,
 ): Promise<TwitterContent> {
+  const { finalSystemPrompt } = buildFinalSystemPrompt(
+    "twitter",
+    settings,
+    `运行时约束：必须输出 Twitter/X JSON，模式固定为 ${input.twitterMode || "single"}，每条内容不能超过 280 字符。`,
+  );
   const content = await createOpenAiCompatibleCompletion(settings.provider, [
     {
       role: "system",
-      content: settings.twitter.systemPrompt,
+      content: finalSystemPrompt,
     },
     {
       role: "user",

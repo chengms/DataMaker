@@ -1,4 +1,9 @@
-import type { AppSettings, LlmProviderSettings, PlatformPromptSettings } from "@/types/settings";
+import type {
+  AppSettings,
+  LlmProviderSettings,
+  PlatformPromptConfig,
+  PlatformPromptSettings,
+} from "@/types/settings";
 import { getServerEnvValue } from "@/lib/server-env";
 import { getProviderSettingsFromEnv } from "@/lib/provider-env";
 
@@ -53,9 +58,30 @@ const DEFAULT_PLATFORM_SETTINGS: Record<
   },
 };
 
+export const DEFAULT_PLATFORM_PROMPTS: Required<PlatformPromptConfig> = {
+  wechat:
+    "保持公众号长文的编辑感与阅读节奏。开头先交代为什么值得读，中段按问题拆解，小标题清晰，结尾给出可执行 CTA。",
+  xiaohongshu:
+    "保持小红书图文笔记的真实分享感。标题先给收益点，正文分段更短，语气更像经验复盘，适度保留互动感。",
+  twitter:
+    "保持 Twitter/X 的压缩表达。观点前置，句子短，hook 明确；thread 模式下每条都要独立成立但能串成一条线。",
+  video_script:
+    "保持短视频脚本的镜头感和口播感。前三秒抓人，后续推进节奏明显，结尾 CTA 直接，备注里补足表演与画面提示。",
+};
+
+export function getDefaultPlatformPromptConfig(): Required<PlatformPromptConfig> {
+  return { ...DEFAULT_PLATFORM_PROMPTS };
+}
+
 export function getDefaultAppSettings(): AppSettings {
   return {
     provider: getDefaultProviderSettings(),
+    platformPrompts: {
+      wechat: "",
+      xiaohongshu: "",
+      twitter: "",
+      video_script: "",
+    },
     wechat: DEFAULT_PLATFORM_SETTINGS.wechat,
     xiaohongshu: DEFAULT_PLATFORM_SETTINGS.xiaohongshu,
     twitter: DEFAULT_PLATFORM_SETTINGS.twitter,

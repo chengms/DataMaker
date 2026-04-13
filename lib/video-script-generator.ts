@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { createOpenAiCompatibleCompletion } from "@/lib/openai-compatible";
+import { buildFinalSystemPrompt } from "@/lib/platform-prompt-settings";
 import type { VideoScriptContent } from "@/types/content";
 import type { AppSettings } from "@/types/settings";
 import type { TaskInput } from "@/types/task";
@@ -63,10 +64,15 @@ export async function generateVideoScriptContent(
   input: TaskInput,
   settings: AppSettings,
 ): Promise<VideoScriptContent> {
+  const { finalSystemPrompt } = buildFinalSystemPrompt(
+    "video_script",
+    settings,
+    "运行时约束：必须输出视频脚本 JSON，包含标题、时长、hook、body、transition、endingCta 和 voiceoverNotes。",
+  );
   const content = await createOpenAiCompatibleCompletion(settings.provider, [
     {
       role: "system",
-      content: settings.video_script.systemPrompt,
+      content: finalSystemPrompt,
     },
     {
       role: "user",

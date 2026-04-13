@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
+import { PlatformPromptSettingsForm } from "@/components/settings/PlatformPromptSettingsForm";
 import { PlatformPromptForm } from "@/components/settings/PlatformPromptForm";
 import { ProviderSettingsForm } from "@/components/settings/ProviderSettingsForm";
 import { SettingsSidebar } from "@/components/settings/SettingsSidebar";
@@ -22,6 +23,7 @@ export function SettingsPageShell({
   const [settings, setSettings] = useState<AppSettings>(initialSettings);
   const [activeSection, setActiveSection] = useState<SettingsSection>("provider");
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingPrompt, setIsSavingPrompt] = useState(false);
 
   async function saveAll(nextSettings: AppSettings) {
     setIsSaving(true);
@@ -61,6 +63,33 @@ export function SettingsPageShell({
     await saveAll(nextSettings);
   }
 
+  async function savePlatformPrompt(platform: PlatformType, prompt: string) {
+    setIsSavingPrompt(true);
+    try {
+      const response = await fetch("/api/settings/platform-prompts", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          [platform]: prompt,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("保存平台提示词失败");
+      }
+      const data = (await response.json()) as AppSettings["platformPrompts"];
+      setSettings((current) => ({
+        ...current,
+        platformPrompts: data,
+      }));
+      toast.success("平台提示词已保存");
+    } catch (error) {
+      console.error(error);
+      toast.error("保存平台提示词失败");
+    } finally {
+      setIsSavingPrompt(false);
+    }
+  }
+
   return (
     <main className="min-h-screen px-4 py-6 lg:px-6 lg:py-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
@@ -68,6 +97,7 @@ export function SettingsPageShell({
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Settings</p>
             <h1 className="mt-2 text-3xl font-semibold">模型服务与平台 Prompt 设置</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Platform Prompt Settings 与平台运行约束在这里分开维护。</p>
           </div>
           <Button variant="outline" asChild>
             <Link href="/">
@@ -93,18 +123,27 @@ export function SettingsPageShell({
               onReset={() => void resetSection("provider")}
             />
           ) : (
-            <PlatformPromptForm
-              platform={activeSection as PlatformType}
-              settings={settings[activeSection as PlatformType]}
-              isSaving={isSaving}
-              onSave={(values) =>
-                saveAll({
-                  ...settings,
-                  [activeSection]: values,
-                })
-              }
-              onReset={() => void resetSection(activeSection)}
-            />
+            <div className="space-y-6">
+              <PlatformPromptSettingsForm
+                platform={activeSection as PlatformType}
+                prompt={settings.platformPrompts[activeSection as PlatformType] || ""}
+                defaultPrompt={defaultSettings.platformPrompts[activeSection as PlatformType] || ""}
+                isSaving={isSavingPrompt}
+                onSave={(prompt) => savePlatformPrompt(activeSection as PlatformType, prompt)}
+              />
+              <PlatformPromptForm
+                platform={activeSection as PlatformType}
+                settings={settings[activeSection as PlatformType]}
+                isSaving={isSaving}
+                onSave={(values) =>
+                  saveAll({
+                    ...settings,
+                    [activeSection]: values,
+                  })
+                }
+                onReset={() => void resetSection(activeSection)}
+              />
+            </div>
           )}
         </div>
       </div>

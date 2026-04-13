@@ -43,10 +43,10 @@ export function PlatformPromptForm({
   return (
     <form className="space-y-5 rounded-[28px] border bg-white/80 p-6 shadow-panel" onSubmit={form.handleSubmit(onSave)}>
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Prompt Settings</p>
-        <h2 className="mt-2 text-2xl font-semibold">{PLATFORM_LABELS[platform]}</h2>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Platform Runtime Settings</p>
+        <h2 className="mt-2 text-2xl font-semibold">{PLATFORM_LABELS[platform]} 生成约束</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          这里的 System Prompt、默认语气、默认长度和附加规则会参与当前平台的生成过程。
+          这里配置基础 System Prompt、默认语气、默认长度和附加规则。基础 Prompt 会与上面的平台提示词共同拼接成最终 System Prompt。
         </p>
       </div>
 
@@ -59,7 +59,7 @@ export function PlatformPromptForm({
       </div>
 
       <div className="space-y-2">
-        <Label>System Prompt</Label>
+        <Label>基础 System Prompt</Label>
         <Textarea className="min-h-40" {...form.register("systemPrompt")} />
       </div>
 

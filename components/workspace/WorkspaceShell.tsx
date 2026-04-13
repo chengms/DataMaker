@@ -21,7 +21,7 @@ import { WorkspaceActions } from "@/components/workspace/WorkspaceActions";
 import { WorkspacePreviewDialog } from "@/components/workspace/WorkspacePreviewDialog";
 import { WorkspacePreviewPanel } from "@/components/workspace/WorkspacePreviewPanel";
 import { getPlatformExportData } from "@/lib/export";
-import { PLATFORM_LABELS, TASK_STATUS_LABELS } from "@/lib/platforms";
+import { PLATFORM_LABELS, SUBTASK_STATUS_LABELS, TASK_STATUS_LABELS } from "@/lib/platforms";
 import {
   buildWorkbenchTimeline,
   getReferenceArticlePlaceholders,
@@ -614,6 +614,44 @@ export function WorkspaceShell({
                       <p className="mt-2 text-sm leading-6 text-slate-600">{item.detail}</p>
                     </div>
                   ))}
+                  {displayTask.execution ? (
+                    <div className="rounded-[24px] border border-slate-200 bg-white px-4 py-4">
+                      <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-900">
+                        <FileStack className="size-4 text-sky-500" />
+                        子任务执行状态
+                        <Badge variant="outline" className="bg-slate-50">
+                          {displayTask.execution.subTasks.filter((subTask) => subTask.status === "completed").length}/
+                          {displayTask.execution.subTasks.length}
+                        </Badge>
+                      </div>
+                      <div className="mt-4 space-y-2">
+                        {displayTask.execution.subTasks.map((subTask) => (
+                          <div
+                            key={subTask.id}
+                            className="rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-3"
+                          >
+                            <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-900">
+                              <span>{subTask.title}</span>
+                              <Badge
+                                variant={
+                                  subTask.status === "completed"
+                                    ? "success"
+                                    : subTask.status === "failed"
+                                      ? "secondary"
+                                      : "outline"
+                                }
+                              >
+                                {SUBTASK_STATUS_LABELS[subTask.status]}
+                              </Badge>
+                            </div>
+                            <p className="mt-2 text-sm leading-6 text-slate-600">
+                              {subTask.error || subTask.result || subTask.goal}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                   {instructionHistory.map((entry) => (
                     <div key={entry.id} className="rounded-[24px] border border-emerald-200 bg-emerald-50/70 px-4 py-4">
                       <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-emerald-900">

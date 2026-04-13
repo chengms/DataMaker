@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { createOpenAiCompatibleCompletion } from "@/lib/openai-compatible";
+import { buildFinalSystemPrompt } from "@/lib/platform-prompt-settings";
 import type { WechatContent } from "@/types/content";
 import type { AppSettings } from "@/types/settings";
 import type { TaskInput } from "@/types/task";
@@ -73,10 +74,15 @@ export async function generateWechatContent(
   input: TaskInput,
   settings: AppSettings,
 ): Promise<WechatContent> {
+  const { finalSystemPrompt } = buildFinalSystemPrompt(
+    "wechat",
+    settings,
+    "运行时约束：必须输出公众号结构化长文 JSON，保留标题、摘要、sections 和 CTA。",
+  );
   const content = await createOpenAiCompatibleCompletion(settings.provider, [
     {
       role: "system",
-      content: settings.wechat.systemPrompt,
+      content: finalSystemPrompt,
     },
     {
       role: "user",

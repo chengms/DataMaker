@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { generateTaskContents } from "@/lib/content-generation";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateSettings } from "@/lib/settings-service";
+import { attachExecutionMetadata } from "@/lib/task-execution";
 import { serializeTask } from "@/lib/task-serializers";
 import type { TaskInput } from "@/types/task";
 
@@ -27,15 +28,39 @@ export async function POST(_: Request, context: RouteContext) {
   try {
     const settings = await getOrCreateSettings();
     const input = existing.input as TaskInput;
-    const generatedContents = await generateTaskContents(input, settings);
+    const generatedContents = await generateTaskContents(input, settings, async (execution, contents) => {
+      await prisma.task.update({
+        where: { id: taskId },
+        data: {
+          status:
+            execution.status === "failed"
+              ? "failed"
+              : execution.status === "completed"
+                ? "generated"
+                : "generating",
+          contents: attachExecutionMetadata(contents, execution),
+        },
+      });
+    });
 
     const task = await prisma.task.update({
       where: { id: taskId },
       data: {
-        contents: generatedContents,
-        status: "generated",
+        contents: attachExecutionMetadata(generatedContents.contents, generatedContents.execution),
+        status: generatedContents.execution.status === "failed" ? "failed" : "generated",
       },
     });
+
+    if (generatedContents.execution.status === "failed") {
+      const failedSubTask = generatedContents.execution.subTasks.find((subTask) => subTask.status === "failed");
+      return NextResponse.json(
+        {
+          message: failedSubTask?.error || "内容生成失败",
+          task: serializeTask(task),
+        },
+        { status: 502 },
+      );
+    }
 
     return NextResponse.json(serializeTask(task));
   } catch (error) {
@@ -44,7 +69,7 @@ export async function POST(_: Request, context: RouteContext) {
     const fallbackTask = await prisma.task.update({
       where: { id: taskId },
       data: {
-        status: "draft",
+        status: "failed",
       },
     });
 

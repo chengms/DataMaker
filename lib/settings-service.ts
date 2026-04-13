@@ -1,8 +1,17 @@
 import { prisma } from "@/lib/prisma";
-import { getDefaultAppSettings } from "@/lib/default-settings";
+import { getDefaultAppSettings, getDefaultPlatformPromptConfig } from "@/lib/default-settings";
 import { getProviderSettingsFromEnv } from "@/lib/provider-env";
 import { serializeSettings } from "@/lib/task-serializers";
-import type { AppSettings, LlmProviderSettings } from "@/types/settings";
+import type { AppSettings, LlmProviderSettings, PlatformPromptConfig } from "@/types/settings";
+
+function normalizePlatformPrompts(value: PlatformPromptConfig | undefined) {
+  return {
+    wechat: value?.wechat ?? "",
+    xiaohongshu: value?.xiaohongshu ?? "",
+    twitter: value?.twitter ?? "",
+    video_script: value?.video_script ?? "",
+  };
+}
 
 export function normalizeSettings(input: unknown): AppSettings {
   const defaults = getDefaultAppSettings();
@@ -18,6 +27,7 @@ export function normalizeSettings(input: unknown): AppSettings {
       model: provider.model || preset.model,
       temperature: provider.temperature ?? preset.temperature ?? defaults.provider.temperature,
     },
+    platformPrompts: normalizePlatformPrompts(value.platformPrompts),
     wechat: {
       ...defaults.wechat,
       ...(value.wechat ?? {}),
@@ -38,7 +48,10 @@ export function normalizeSettings(input: unknown): AppSettings {
 }
 
 export function getDefaultSettings() {
-  return getDefaultAppSettings();
+  return {
+    ...getDefaultAppSettings(),
+    platformPrompts: getDefaultPlatformPromptConfig(),
+  };
 }
 
 export async function saveSettings(settings: AppSettings): Promise<AppSettings> {

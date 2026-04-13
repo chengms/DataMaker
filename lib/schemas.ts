@@ -9,6 +9,15 @@ export const platformTypeSchema = z.enum([
 
 export const twitterModeSchema = z.enum(["single", "thread"]);
 
+const promptFieldSchema = z.string().max(6000, "提示词长度不能超过 6000 个字符");
+
+export const platformPromptConfigSchema = z.object({
+  wechat: promptFieldSchema.optional(),
+  xiaohongshu: promptFieldSchema.optional(),
+  twitter: promptFieldSchema.optional(),
+  video_script: promptFieldSchema.optional(),
+});
+
 export const taskInputSchema = z
   .object({
     topic: z.string().trim().min(1, "请输入创作主题"),
@@ -34,7 +43,7 @@ export const taskInputSchema = z
 
 export const patchTaskSchema = z.object({
   status: z
-    .enum(["draft", "generating", "generated", "edited", "published_mock"])
+    .enum(["draft", "generating", "generated", "edited", "failed", "published_mock"])
     .optional(),
   contents: z.record(z.string(), z.unknown()).optional(),
 });
@@ -57,6 +66,7 @@ export const providerSettingsSchema = z.object({
 
 export const appSettingsSchema = z.object({
   provider: providerSettingsSchema,
+  platformPrompts: platformPromptConfigSchema,
   wechat: platformPromptSettingsSchema,
   xiaohongshu: platformPromptSettingsSchema,
   twitter: platformPromptSettingsSchema,

@@ -4,6 +4,7 @@ import { buildTaskTitle } from "@/lib/mockGenerators";
 import { prisma } from "@/lib/prisma";
 import { taskInputSchema } from "@/lib/schemas";
 import { getOrCreateSettings } from "@/lib/settings-service";
+import { attachExecutionMetadata, createTaskExecution } from "@/lib/task-execution";
 import { serializeTask } from "@/lib/task-serializers";
 
 export async function GET() {
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
       status: "generating",
       selectedPlatforms: enabledPlatforms,
       input: normalizedInput,
-      contents: {},
+      contents: attachExecutionMetadata({}, createTaskExecution(normalizedInput)),
     },
   });
 

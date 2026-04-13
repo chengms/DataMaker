@@ -1,5 +1,12 @@
 import type { PlatformType } from "@/types/content";
 
+export type PlatformPromptConfig = {
+  wechat?: string;
+  xiaohongshu?: string;
+  twitter?: string;
+  video_script?: string;
+};
+
 export type PlatformPromptSettings = {
   enabled: boolean;
   systemPrompt: string;
@@ -18,6 +25,7 @@ export type LlmProviderSettings = {
 
 export type AppSettings = {
   provider: LlmProviderSettings;
+  platformPrompts: PlatformPromptConfig;
   wechat: PlatformPromptSettings;
   xiaohongshu: PlatformPromptSettings;
   twitter: PlatformPromptSettings;
