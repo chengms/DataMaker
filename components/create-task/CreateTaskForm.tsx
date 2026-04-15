@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { PlatformSelector } from "@/components/create-task/PlatformSelector";
+import { TopicSelector } from "@/components/create-task/TopicSelector";
 import { TwitterModeSelector } from "@/components/create-task/TwitterModeSelector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,7 +46,15 @@ function CreateTaskFormSkeleton() {
   );
 }
 
-export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: PlatformType[] }) {
+export function CreateTaskForm({
+  enabledPlatforms,
+  dataAgentEnabled,
+  dataAgentUrl,
+}: {
+  enabledPlatforms: PlatformType[];
+  dataAgentEnabled: boolean;
+  dataAgentUrl: string;
+}) {
   const router = useRouter();
   const [isHydrated, setIsHydrated] = useState(false);
   const [autoAiReview, setAutoAiReview] = useState(true);
@@ -56,6 +65,7 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
     resolver: zodResolver(taskInputSchema),
     defaultValues: {
       topic: "",
+      topicId: "",
       audience: "",
       tone: "",
       contentGoal: "",
@@ -138,6 +148,7 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...values,
+          topicId: values.topicId || undefined,
           aiPrecheckEnabled: autoAiReview,
           aiAutoFixEnabled: autoAiFix,
           selectedPlatforms: filteredPlatforms,
@@ -216,6 +227,13 @@ export function CreateTaskForm({ enabledPlatforms }: { enabledPlatforms: Platfor
               <p className="text-sm text-destructive">{form.formState.errors.topic.message}</p>
             ) : null}
           </div>
+
+          <TopicSelector
+            value={form.watch("topicId") ?? ""}
+            dataAgentEnabled={dataAgentEnabled}
+            dataAgentUrl={dataAgentUrl}
+            onChange={(topicId) => form.setValue("topicId", topicId)}
+          />
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">

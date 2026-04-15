@@ -28,7 +28,11 @@ export default async function HomePage() {
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <CreateTaskForm enabledPlatforms={enabledPlatforms} />
+          <CreateTaskForm
+            enabledPlatforms={enabledPlatforms}
+            dataAgentEnabled={settings.dataAgent.enabled}
+            dataAgentUrl={settings.dataAgent.baseUrl}
+          />
 
           <div className="space-y-4 rounded-[28px] border bg-white/70 p-5 shadow-panel">
             <div>

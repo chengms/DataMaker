@@ -11,6 +11,19 @@ export const twitterModeSchema = z.enum(["single", "thread"]);
 
 const promptFieldSchema = z.string().max(6000, "提示词长度不能超过 6000 个字符");
 
+export const sourceArticleSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  creator: z.string(),
+  platform: z.string(),
+  publishTime: z.string(),
+  summary: z.string(),
+  plainTextContent: z.string(),
+  heat: z.number(),
+  engagementScore: z.number(),
+  matchedKeywords: z.array(z.string()),
+});
+
 export const platformPromptConfigSchema = z.object({
   wechat: promptFieldSchema.optional(),
   xiaohongshu: promptFieldSchema.optional(),
@@ -21,6 +34,7 @@ export const platformPromptConfigSchema = z.object({
 export const taskInputSchema = z
   .object({
     topic: z.string().trim().min(1, "请输入创作主题"),
+    topicId: z.string().trim().optional(),
     audience: z.string().trim().optional(),
     tone: z.string().trim().optional(),
     contentGoal: z.string().trim().optional(),
@@ -30,6 +44,7 @@ export const taskInputSchema = z
     aiAutoFixEnabled: z.boolean().optional(),
     selectedPlatforms: z.array(platformTypeSchema).min(1, "至少选择一个平台"),
     twitterMode: twitterModeSchema.optional(),
+    sourceArticles: z.array(sourceArticleSchema).optional(),
   })
   .superRefine((value, ctx) => {
     if (value.selectedPlatforms.includes("twitter") && !value.twitterMode) {
@@ -79,10 +94,16 @@ export const imageGenerationSettingsSchema = z.object({
   customStylePrompt: z.string().max(2000, "自定义图片风格描述不能超过 2000 个字符").optional(),
 });
 
+export const dataAgentSettingsSchema = z.object({
+  enabled: z.boolean(),
+  baseUrl: z.string().trim().url("请输入合法的 DataAgent 地址"),
+});
+
 export const appSettingsSchema = z.object({
   provider: providerSettingsSchema,
   platformPrompts: platformPromptConfigSchema,
   imageGeneration: imageGenerationSettingsSchema,
+  dataAgent: dataAgentSettingsSchema,
   wechat: platformPromptSettingsSchema,
   xiaohongshu: platformPromptSettingsSchema,
   twitter: platformPromptSettingsSchema,

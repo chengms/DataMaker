@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import {
   getDefaultAppSettings,
+  getDefaultDataAgentSettings,
   getDefaultImageGenerationSettings,
   getDefaultPlatformPromptConfig,
 } from "@/lib/default-settings";
@@ -8,6 +9,7 @@ import { getProviderSettingsFromEnv } from "@/lib/provider-env";
 import { serializeSettings } from "@/lib/task-serializers";
 import type {
   AppSettings,
+  DataAgentSettings,
   ImageGenerationSettings,
   LlmProviderSettings,
   PlatformPromptConfig,
@@ -32,6 +34,14 @@ function normalizeImageGenerationSettings(value: ImageGenerationSettings | undef
   };
 }
 
+function normalizeDataAgentSettings(value: DataAgentSettings | undefined): DataAgentSettings {
+  const defaults = getDefaultDataAgentSettings();
+  return {
+    enabled: value?.enabled ?? defaults.enabled,
+    baseUrl: value?.baseUrl ?? defaults.baseUrl,
+  };
+}
+
 export function normalizeSettings(input: unknown): AppSettings {
   const defaults = getDefaultAppSettings();
   const value = (input ?? {}) as Partial<AppSettings>;
@@ -48,6 +58,7 @@ export function normalizeSettings(input: unknown): AppSettings {
     },
     platformPrompts: normalizePlatformPrompts(value.platformPrompts),
     imageGeneration: normalizeImageGenerationSettings(value.imageGeneration),
+    dataAgent: normalizeDataAgentSettings(value.dataAgent),
     wechat: {
       ...defaults.wechat,
       ...(value.wechat ?? {}),

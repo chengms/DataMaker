@@ -41,7 +41,7 @@ function extractJsonObject(text: string) {
 function buildTwitterPrompt(input: TaskInput, settings: AppSettings) {
   const mode = input.twitterMode || "single";
 
-  return [
+  const sections: string[] = [
     "请根据下面的创作需求，输出适合 Twitter/X 发布的内容。",
     "必须严格返回 JSON，不要返回 Markdown，不要解释，不要补充说明。",
     `输出模式必须是：${mode}`,
@@ -49,7 +49,7 @@ function buildTwitterPrompt(input: TaskInput, settings: AppSettings) {
     JSON.stringify({ mode: "single", text: "string" }, null, 2),
     "当 mode 为 thread 时，JSON 结构必须是：",
     JSON.stringify({ mode: "thread", tweets: [{ id: "string", text: "string" }] }, null, 2),
-    "写作要求：",
+    "创作需求：",
     `- 主题：${input.topic}`,
     `- 受众：${input.audience || "未指定"}`,
     `- 语气：${input.tone || settings.twitter.defaultTone || "未指定"}`,
@@ -57,10 +57,30 @@ function buildTwitterPrompt(input: TaskInput, settings: AppSettings) {
     `- 长度提示：${input.lengthHint || settings.twitter.defaultLength || "未指定"}`,
     `- 素材备注：${input.materialNotes || "未指定"}`,
     `- 平台附加规则：${settings.twitter.extraRules || "无"}`,
+  ];
+
+  if (input.sourceArticles && input.sourceArticles.length > 0) {
+    const articleList = input.sourceArticles
+      .slice(0, 3)
+      .map(
+        (article, index) =>
+          `[素材 ${index + 1}] ${article.title}\n摘要：${article.summary}`,
+      )
+      .join("\n\n");
+    sections.push(
+      "\n参考素材（来自 DataAgent 内容池）：",
+      articleList,
+      "\n注意：可提炼素材中的核心观点用于推文，每条 tweet 不超过 280 字符。",
+    );
+  }
+
+  sections.push(
     "- 每条 tweet 都要独立可读。",
     "- 不要使用 markdown 列表。",
     "- 不要超过 280 个字符。",
-  ].join("\n");
+  );
+
+  return sections.join("\n");
 }
 
 export async function generateTwitterContent(

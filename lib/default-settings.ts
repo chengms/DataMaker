@@ -1,5 +1,6 @@
 import type {
   AppSettings,
+  DataAgentSettings,
   ImageGenerationSettings,
   LlmProviderSettings,
   PlatformPromptConfig,
@@ -70,6 +71,13 @@ export const DEFAULT_PLATFORM_PROMPTS: Required<PlatformPromptConfig> = {
     "保持短视频脚本的镜头感和口播感。前三秒抓人，后续推进节奏明显，结尾 CTA 直接，备注里补足表演与画面提示。",
 };
 
+function getDefaultDataAgentSettings(): DataAgentSettings {
+  return {
+    enabled: false,
+    baseUrl: getServerEnvValue("DATA_AGENT_BASE_URL") || "http://localhost:4010",
+  };
+}
+
 export function getDefaultPlatformPromptConfig(): Required<PlatformPromptConfig> {
   return { ...DEFAULT_PLATFORM_PROMPTS };
 }
@@ -93,6 +101,7 @@ export function getDefaultAppSettings(): AppSettings {
       video_script: "",
     },
     imageGeneration: getDefaultImageGenerationSettings(),
+    dataAgent: getDefaultDataAgentSettings(),
     wechat: DEFAULT_PLATFORM_SETTINGS.wechat,
     xiaohongshu: DEFAULT_PLATFORM_SETTINGS.xiaohongshu,
     twitter: DEFAULT_PLATFORM_SETTINGS.twitter,

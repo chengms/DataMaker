@@ -29,7 +29,7 @@ function extractJsonObject(text: string) {
 }
 
 function buildVideoScriptPrompt(input: TaskInput, settings: AppSettings) {
-  return [
+  const sections: string[] = [
     "请根据下面的创作需求，输出一个适合短视频口播的脚本。",
     "必须严格返回 JSON，不要返回 Markdown，不要解释，不要补充说明。",
     "JSON 结构必须是：",
@@ -46,7 +46,7 @@ function buildVideoScriptPrompt(input: TaskInput, settings: AppSettings) {
       null,
       2,
     ),
-    "写作要求：",
+    "创作需求：",
     `- 主题：${input.topic}`,
     `- 受众：${input.audience || "未指定"}`,
     `- 语气：${input.tone || settings.video_script.defaultTone || "未指定"}`,
@@ -54,10 +54,29 @@ function buildVideoScriptPrompt(input: TaskInput, settings: AppSettings) {
     `- 长度提示：${input.lengthHint || settings.video_script.defaultLength || "未指定"}`,
     `- 素材备注：${input.materialNotes || "未指定"}`,
     `- 平台附加规则：${settings.video_script.extraRules || "无"}`,
+  ];
+
+  if (input.sourceArticles && input.sourceArticles.length > 0) {
+    const articleList = input.sourceArticles
+      .slice(0, 3)
+      .map(
+        (article, index) =>
+          `[素材 ${index + 1}] ${article.title}\n${article.summary}`,
+      )
+      .join("\n\n");
+    sections.push(
+      "\n参考素材（来自 DataAgent 内容池，请从中提取有传播力的观点和案例）：",
+      articleList,
+    );
+  }
+
+  sections.push(
     "- hook 必须适合前三秒表达。",
     "- body 直接输出口播内容，不要写分镜编号。",
     "- voiceoverNotes 说明语速、强调点或表演提示。",
-  ].join("\n");
+  );
+
+  return sections.join("\n");
 }
 
 export async function generateVideoScriptContent(

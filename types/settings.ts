@@ -43,10 +43,16 @@ export type AppSettings = {
   provider: LlmProviderSettings;
   platformPrompts: PlatformPromptConfig;
   imageGeneration: ImageGenerationSettings;
+  dataAgent: DataAgentSettings;
   wechat: PlatformPromptSettings;
   xiaohongshu: PlatformPromptSettings;
   twitter: PlatformPromptSettings;
   video_script: PlatformPromptSettings;
 };
 
-export type SettingsSection = "provider" | "image_generation" | PlatformType;
+export type DataAgentSettings = {
+  enabled: boolean;
+  baseUrl: string;
+};
+
+export type SettingsSection = "provider" | "image_generation" | "data_agent" | PlatformType;

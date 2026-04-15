@@ -35,7 +35,7 @@ function extractJsonObject(text: string) {
 }
 
 function buildWechatPrompt(input: TaskInput, settings: AppSettings) {
-  return [
+  const sections: string[] = [
     "请根据下面的创作需求，输出一篇适合公众号发布的文章。",
     "必须严格返回 JSON，不要返回 Markdown，不要解释，不要补充说明。",
     "JSON 结构必须是：",
@@ -56,7 +56,7 @@ function buildWechatPrompt(input: TaskInput, settings: AppSettings) {
       null,
       2,
     ),
-    "写作要求：",
+    "创作需求：",
     `- 主题：${input.topic}`,
     `- 受众：${input.audience || "未指定"}`,
     `- 语气：${input.tone || settings.wechat.defaultTone || "未指定"}`,
@@ -64,10 +64,31 @@ function buildWechatPrompt(input: TaskInput, settings: AppSettings) {
     `- 长度提示：${input.lengthHint || settings.wechat.defaultLength || "未指定"}`,
     `- 素材备注：${input.materialNotes || "未指定"}`,
     `- 平台附加规则：${settings.wechat.extraRules || "无"}`,
+  ];
+
+  // 如果有真实文章素材，附加到 prompt 中
+  if (input.sourceArticles && input.sourceArticles.length > 0) {
+    const articleList = input.sourceArticles
+      .slice(0, 5)
+      .map(
+        (article, index) =>
+          `[素材 ${index + 1}] ${article.title}\n作者：${article.creator}\n平台：${article.platform}\n摘要：${article.summary}\n正文片段：${article.plainTextContent.slice(0, 1500)}`,
+      )
+      .join("\n\n");
+    sections.push(
+      "\n参考素材（来自 DataAgent 内容池，请基于这些真实内容进行创作）：",
+      articleList,
+      "\n注意：请充分利用上述素材中的真实信息和数据，使生成的文章更具可信度和深度。",
+    );
+  }
+
+  sections.push(
     "- 文章要有明确标题、摘要、3-5 个 section，以及结尾 CTA。",
     "- section.body 要写成可直接发布的自然段，不要只写要点。",
     "- 如果有适合配图的位置，可以在 imagePlaceholder 中给出简短建议。",
-  ].join("\n");
+  );
+
+  return sections.join("\n");
 }
 
 export async function generateWechatContent(

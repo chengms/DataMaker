@@ -10,6 +10,7 @@ import { PlatformPromptSettingsForm } from "@/components/settings/PlatformPrompt
 import { PlatformPromptForm } from "@/components/settings/PlatformPromptForm";
 import { ProviderSettingsForm } from "@/components/settings/ProviderSettingsForm";
 import { SettingsSidebar } from "@/components/settings/SettingsSidebar";
+import { DataAgentSettingsForm } from "@/components/settings/DataAgentSettingsForm";
 import { Button } from "@/components/ui/button";
 import type { PlatformType } from "@/types/content";
 import type { AppSettings, SettingsSection } from "@/types/settings";
@@ -59,6 +60,11 @@ export function SettingsPageShell({
           ? {
               ...settings,
               imageGeneration: defaultSettings.imageGeneration,
+            }
+        : section === "data_agent"
+          ? {
+              ...settings,
+              dataAgent: defaultSettings.dataAgent,
             }
         : {
             ...settings,
@@ -139,6 +145,18 @@ export function SettingsPageShell({
                 })
               }
               onReset={() => void resetSection("image_generation")}
+            />
+          ) : activeSection === "data_agent" ? (
+            <DataAgentSettingsForm
+              settings={settings.dataAgent}
+              isSaving={isSaving}
+              onSave={(values) =>
+                saveAll({
+                  ...settings,
+                  dataAgent: values,
+                })
+              }
+              onReset={() => void resetSection("data_agent")}
             />
           ) : (
             <div className="space-y-6">

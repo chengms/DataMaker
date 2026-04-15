@@ -31,6 +31,7 @@ export type TaskStatus =
 
 export type TaskInput = {
   topic: string;
+  topicId?: string;
   audience?: string;
   tone?: string;
   contentGoal?: string;
@@ -40,6 +41,20 @@ export type TaskInput = {
   aiAutoFixEnabled?: boolean;
   selectedPlatforms: PlatformType[];
   twitterMode?: TwitterMode;
+  sourceArticles?: SourceArticle[];
+};
+
+export type SourceArticle = {
+  id: string;
+  title: string;
+  creator: string;
+  platform: string;
+  publishTime: string;
+  summary: string;
+  plainTextContent: string;
+  heat: number;
+  engagementScore: number;
+  matchedKeywords: string[];
 };
 
 export type TaskContext = {

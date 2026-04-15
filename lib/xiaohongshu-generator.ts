@@ -35,7 +35,7 @@ function extractJsonObject(text: string) {
 }
 
 function buildXiaohongshuPrompt(input: TaskInput, settings: AppSettings) {
-  return [
+  const sections: string[] = [
     "请根据下面的创作需求，输出一篇适合小红书发布的图文内容。",
     "必须严格返回 JSON，不要返回 Markdown，不要解释，不要补充说明。",
     "JSON 结构必须是：",
@@ -49,7 +49,7 @@ function buildXiaohongshuPrompt(input: TaskInput, settings: AppSettings) {
       null,
       2,
     ),
-    "写作要求：",
+    "创作需求：",
     `- 主题：${input.topic}`,
     `- 受众：${input.audience || "未指定"}`,
     `- 语气：${input.tone || settings.xiaohongshu.defaultTone || "未指定"}`,
@@ -57,10 +57,31 @@ function buildXiaohongshuPrompt(input: TaskInput, settings: AppSettings) {
     `- 长度提示：${input.lengthHint || settings.xiaohongshu.defaultLength || "未指定"}`,
     `- 素材备注：${input.materialNotes || "未指定"}`,
     `- 平台附加规则：${settings.xiaohongshu.extraRules || "无"}`,
+  ];
+
+  // 如果有真实文章素材，附加到 prompt 中
+  if (input.sourceArticles && input.sourceArticles.length > 0) {
+    const articleList = input.sourceArticles
+      .slice(0, 5)
+      .map(
+        (article, index) =>
+          `[素材 ${index + 1}] ${article.title}\n作者：${article.creator}\n摘要：${article.summary}\n正文片段：${article.plainTextContent.slice(0, 1000)}`,
+      )
+      .join("\n\n");
+    sections.push(
+      "\n参考素材（来自 DataAgent 内容池，请基于这些真实内容进行创作）：",
+      articleList,
+      "\n注意：可参考这些素材中的亮点、案例和数据，但要用自己的语言重新表达，符合小红书的分享风格。",
+    );
+  }
+
+  sections.push(
     "- images 返回 3 张图片建议，每张图片给出唯一 id、占位说明和图片 caption。",
     "- body 写成适合小红书阅读的自然分段，不要只写提纲。",
     "- hashtags 返回 3 到 6 个，不要带 # 前缀。",
-  ].join("\n");
+  );
+
+  return sections.join("\n");
 }
 
 export async function generateXiaohongshuContent(
