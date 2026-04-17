@@ -71,7 +71,7 @@ export const DEFAULT_PLATFORM_PROMPTS: Required<PlatformPromptConfig> = {
     "保持短视频脚本的镜头感和口播感。前三秒抓人，后续推进节奏明显，结尾 CTA 直接，备注里补足表演与画面提示。",
 };
 
-function getDefaultDataAgentSettings(): DataAgentSettings {
+export function getDefaultDataAgentSettings(): DataAgentSettings {
   return {
     enabled: false,
     baseUrl: getServerEnvValue("DATA_AGENT_BASE_URL") || "http://localhost:4010",
