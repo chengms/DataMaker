@@ -1,3 +1,15 @@
+# Archived
+
+This repository has been integrated into the unified monorepo:
+
+https://github.com/chengms/DataAgent-Maker
+
+Please use the monorepo for future development.
+
+Note: The unified monorepo is currently private. If you need access, request access to chengms/DataAgent-Maker.
+
+---
+
 # Multi-Platform Content Studio V1
 
 一个面向内容团队的多平台内容工作台：单次输入，多平台并行产出，再按平台继续编辑、导出和模拟发布。
